@@ -22,6 +22,7 @@ git checkout -b feature/nombre-descriptivo
 
 # 3. Hacé commits pequeños y descriptivos
 git add <archivos>
+git diff --cached  # Revisá qué cambios van a incluirse
 git commit -m "feat: agregar registro masivo de asistencias"
 
 # 4. Subí tu rama y abrí el PR
@@ -31,12 +32,12 @@ gh pr create   # o desde la web de GitHub
 
 ## Convenciones de ramas
 
-| Prefijo   | Uso                         | Ejemplo                    |
-|-----------|-----------------------------|----------------------------|
-| `feature/`| Nueva funcionalidad         | `feature/reporte-pdf`      |
-| `fix/`    | Corrección de bug           | `fix/join-columnas`        |
-| `refactor/`| Mejora de código sin cambio funcional | `refactor/services` |
-| `docs/`   | Documentación               | `docs/readme-deploy`       |
+| Prefijo     | Uso                                   | Ejemplo               |
+| ----------- | ------------------------------------- | --------------------- |
+| `feature/`  | Nueva funcionalidad                   | `feature/reporte-pdf` |
+| `fix/`      | Corrección de bug                     | `fix/join-columnas`   |
+| `refactor/` | Mejora de código sin cambio funcional | `refactor/services`   |
+| `docs/`     | Documentación                         | `docs/readme-deploy`  |
 
 ## Convenciones de commits
 
