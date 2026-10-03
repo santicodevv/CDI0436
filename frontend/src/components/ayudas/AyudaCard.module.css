@@ -1,0 +1,55 @@
+.row {
+  display: grid;
+  grid-template-columns: 6rem 13rem 9rem 12rem 13rem 7rem 7rem 12rem;
+  align-items: start;
+  width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #94a3b8 #f1f5f9;
+  cursor: grab;
+}
+
+.row > td {
+  min-width: 0;
+  width: auto;
+}
+
+.row > td::before {
+  content: attr(data-label);
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #64748b;
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.025em;
+  text-transform: uppercase;
+}
+
+.row :is(button, a) {
+  cursor: pointer;
+}
+
+.row[data-dragging='true'],
+.row[data-dragging='true'] * {
+  cursor: grabbing;
+  user-select: none;
+}
+
+.row::-webkit-scrollbar {
+  height: 6px;
+}
+
+.row::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 999px;
+}
+
+.row::-webkit-scrollbar-thumb {
+  background: #94a3b8;
+  border-radius: 999px;
+}
+
+.row::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}

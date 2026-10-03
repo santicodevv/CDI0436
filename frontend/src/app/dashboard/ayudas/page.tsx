@@ -11,14 +11,16 @@ import { AyudaFilters } from '@/components/ayudas/AyudaFilters';
 import { AyudaCard } from '@/components/ayudas/AyudaCard';
 import { AyudaComentarios } from '@/components/ayudas/AyudaComentarios';
 import { AyudaModal } from '@/components/ayudas/AyudaModal';
-import { Loader2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import type { Ayuda, EstadoFiltroAyuda } from '@/lib/types';
+
+const ITEMS_POR_PAGINA = 10;
 
 export default function AyudasPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [estadoFiltro, setEstadoFiltro] = useState<EstadoFiltroAyuda>('pendiente');
   const [fotoModal, setFotoModal] = useState<string | null>(null);
-  const [detalleHover, setDetalleHover] = useState<{ id: string; x: number; y: number } | null>(null);
+  const [paginaActual, setPaginaActual] = useState(1);
 
   // Comentarios
   const [comentariosModal, setComentariosModal] = useState<Ayuda | null>(null);
@@ -55,6 +57,13 @@ export default function AyudasPage() {
     }),
     [ayudas, searchTerm, estadoFiltro]
   );
+
+  const totalPaginas = Math.max(1, Math.ceil(filteredAyudas.length / ITEMS_POR_PAGINA));
+  const paginaVisible = Math.min(paginaActual, totalPaginas);
+  const inicio = (paginaVisible - 1) * ITEMS_POR_PAGINA;
+  const ayudasPaginadas = filteredAyudas.slice(inicio, inicio + ITEMS_POR_PAGINA);
+  const paginas = Array.from({ length: totalPaginas }, (_, index) => index + 1)
+    .filter((pagina) => pagina === 1 || pagina === totalPaginas || Math.abs(pagina - paginaVisible) <= 1);
 
   // Handlers
   const handleEstado = async (id: string, estado: 'aprobada' | 'rechazada') => {
@@ -111,8 +120,6 @@ export default function AyudasPage() {
     );
   };
 
-  const detailTooltip = detalleHover ? ayudas.find((a) => a.id === detalleHover.id)?.detalle : null;
-
   return (
     <ProtectedRoute>
       <DashboardLayout>
@@ -128,34 +135,35 @@ export default function AyudasPage() {
 
           <AyudaFilters
             estadoFiltro={estadoFiltro}
-            onEstadoChange={setEstadoFiltro}
+            onEstadoChange={(estado) => { setEstadoFiltro(estado); setPaginaActual(1); }}
             searchTerm={searchTerm}
-            onSearchChange={setSearchTerm}
+            onSearchChange={(search) => { setSearchTerm(search); setPaginaActual(1); }}
             counts={countByEstado}
             onExport={handleExport}
           />
 
-          <div className="bg-white p-6 rounded-lg shadow-md border border-gray-100">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+          <div className="min-w-0 bg-white rounded-lg shadow-md border border-gray-100">
+            <p className="border-b border-gray-100 px-4 py-3 text-xs text-gray-500">
+              Arrastra una fila hacia los lados para ver su información. También puedes usar su barra de desplazamiento.
+            </p>
+            <div className="min-w-0">
+              <table className="block w-full" aria-label="Solicitudes de ayuda">
+                <thead className="sr-only">
                   <tr>
                     {['Código', 'Beneficiario', 'Teléfono', 'Tipo', 'Detalle', 'Estado', 'Fecha', 'Acciones'].map((h) => (
                       <th
                         key={h}
-                        className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${
-                          h === 'Acciones' ? 'text-right' : ''
-                        }`}
+                        scope="col"
                       >
                         {h}
                       </th>
                     ))}
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="block w-full bg-white divide-y divide-gray-200">
                   {isLoading ? (
-                    <tr>
-                      <td colSpan={8} className="px-6 py-12 text-center">
+                    <tr className="block">
+                      <td colSpan={8} className="block px-6 py-12 text-center">
                         <div className="flex flex-col items-center justify-center text-gray-500">
                           <Loader2 className="w-8 h-8 animate-spin text-blue-500 mb-2" />
                           <p>Cargando solicitudes...</p>
@@ -163,13 +171,13 @@ export default function AyudasPage() {
                       </td>
                     </tr>
                   ) : filteredAyudas.length === 0 ? (
-                    <tr>
-                      <td colSpan={8} className="px-6 py-12 text-center text-gray-500">
+                    <tr className="block">
+                      <td colSpan={8} className="block px-6 py-12 text-center text-gray-500">
                         No se encontraron solicitudes {estadoFiltro !== 'todos' ? estadoFiltro + 's' : ''}.
                       </td>
                     </tr>
                   ) : (
-                    filteredAyudas.map((ayuda) => (
+                    ayudasPaginadas.map((ayuda) => (
                       <AyudaCard
                         key={ayuda.id}
                         ayuda={ayuda}
@@ -180,29 +188,56 @@ export default function AyudasPage() {
                         onAprobar={(id) => handleEstado(id, 'aprobada')}
                         onRechazar={(id) => handleEstado(id, 'rechazada')}
                         onDelete={handleDelete}
-                        onDetalleHover={setDetalleHover}
                       />
                     ))
                   )}
                 </tbody>
               </table>
             </div>
+            {!isLoading && filteredAyudas.length > 0 && (
+              <div className="flex flex-wrap items-center justify-between gap-3 border-t border-gray-200 px-4 py-3">
+                <p className="text-sm text-gray-600" aria-live="polite">
+                  Mostrando {inicio + 1} a {Math.min(inicio + ITEMS_POR_PAGINA, filteredAyudas.length)} de {filteredAyudas.length} solicitudes
+                </p>
+                <nav aria-label="Paginación de solicitudes" className="flex flex-wrap items-center gap-1">
+                  <button
+                    onClick={() => setPaginaActual(paginaVisible - 1)}
+                    disabled={paginaVisible === 1}
+                    aria-label="Página anterior"
+                    className="p-2 rounded-lg hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  {paginas.map((pagina, index) => (
+                    <span key={pagina} className="flex items-center gap-1">
+                      {index > 0 && pagina - paginas[index - 1] > 1 && (
+                        <span className="px-1 text-gray-400" aria-hidden="true">…</span>
+                      )}
+                      <button
+                        onClick={() => setPaginaActual(pagina)}
+                        aria-label={`Página ${pagina}`}
+                        aria-current={paginaVisible === pagina ? 'page' : undefined}
+                        className={`min-w-8 h-8 px-1 rounded-lg text-sm font-medium transition-colors ${
+                          paginaVisible === pagina ? 'bg-purple-600 text-white' : 'hover:bg-gray-100 text-gray-700'
+                        }`}
+                      >
+                        {pagina}
+                      </button>
+                    </span>
+                  ))}
+                  <button
+                    onClick={() => setPaginaActual(paginaVisible + 1)}
+                    disabled={paginaVisible === totalPaginas}
+                    aria-label="Página siguiente"
+                    className="p-2 rounded-lg hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </nav>
+              </div>
+            )}
           </div>
         </div>
-
-        {/* Tooltip para detalle */}
-        {detalleHover && detailTooltip && (
-          <div
-            className="fixed z-50 bg-gray-900 text-white p-4 rounded-lg shadow-xl max-w-md text-sm"
-            style={{
-              left: Math.min(detalleHover.x, window.innerWidth - 400),
-              top: detalleHover.y + 8,
-            }}
-          >
-            <p className="font-medium mb-1">Detalle completo:</p>
-            <p className="whitespace-pre-wrap">{detailTooltip}</p>
-          </div>
-        )}
 
         {/* Modal para comentarios */}
         <Modal
