@@ -15,6 +15,7 @@ interface AyudaCardProps {
   onAprobar: (id: string) => void;
   onRechazar: (id: string) => void;
   onDelete: (id: string) => void;
+  onScrollPositionChange: (scrollLeft: number) => void;
 }
 
 export function AyudaCard({
@@ -26,6 +27,7 @@ export function AyudaCard({
   onAprobar,
   onRechazar,
   onDelete,
+  onScrollPositionChange,
 }: AyudaCardProps) {
   const dragRef = useRef<{ pointerId: number; x: number; scrollLeft: number } | null>(null);
   const wasDragged = useRef(false);
@@ -93,6 +95,9 @@ export function AyudaCard({
       onPointerUp={endDrag}
       onPointerCancel={endDrag}
       onLostPointerCapture={endDrag}
+      onScroll={(event) => onScrollPositionChange(event.currentTarget.scrollLeft)}
+      onMouseEnter={(event) => onScrollPositionChange(event.currentTarget.scrollLeft)}
+      onFocus={(event) => onScrollPositionChange(event.currentTarget.scrollLeft)}
       onClickCapture={(event) => {
         if (wasDragged.current) {
           event.preventDefault();
@@ -108,8 +113,8 @@ export function AyudaCard({
         }
       }}
     >
-      <td data-label="Código" className="px-3 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
-        {ayuda.codigo_beneficiario}
+      <td data-label="Código" className="text-sm font-medium text-gray-900">
+        <span className="block [overflow-wrap:anywhere]">{ayuda.codigo_beneficiario}</span>
       </td>
       <td data-label="Beneficiario" className="px-3 py-3 text-sm text-gray-500 [overflow-wrap:anywhere]">
         <div className="font-medium text-gray-900">{ayuda.nombre_beneficiario}</div>
@@ -136,7 +141,7 @@ export function AyudaCard({
           <AyudaTexto
             texto={tipoLabel[ayuda.tipo] || 'Otros'}
             titulo="Tipo de ayuda completo"
-            className={`w-36 shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${tipoColors[ayuda.tipo] || 'bg-gray-100 text-gray-800'}`}
+            className={`min-w-0 max-w-36 rounded-full px-3 py-1 text-xs font-semibold ${tipoColors[ayuda.tipo] || 'bg-gray-100 text-gray-800'}`}
           />
           {ayuda.foto_url && (
             <button
@@ -150,7 +155,7 @@ export function AyudaCard({
         </div>
       </td>
       <td data-label="Detalle" className="px-3 py-3 text-sm text-gray-500">
-        <AyudaTexto texto={ayuda.detalle} titulo="Detalle completo" className="w-44 hover:text-blue-600" />
+        <AyudaTexto texto={ayuda.detalle} titulo="Detalle completo" className="w-full hover:text-blue-600" />
       </td>
       <td data-label="Estado" className="px-3 py-3 whitespace-nowrap">
         <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${estadoBadge[ayuda.estado]}`}>
@@ -165,7 +170,7 @@ export function AyudaCard({
         })}
       </td>
       <td data-label="Acciones" className="px-3 py-3 whitespace-nowrap text-sm font-medium">
-        <div className="flex justify-end gap-1">
+        <div className="flex items-center gap-1 [&>button]:shrink-0">
           <button
             onClick={() => onOpenComentarios(ayuda)}
             title="Ver comentarios"

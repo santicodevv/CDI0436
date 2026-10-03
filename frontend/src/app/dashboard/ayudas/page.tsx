@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import Alert from '@/components/ui/Alert';
@@ -9,6 +9,7 @@ import { useAyudas, useUpdateEstadoAyuda, useDeleteAyuda, useComentariosAyuda, u
 import { AyudaStats } from '@/components/ayudas/AyudaStats';
 import { AyudaFilters } from '@/components/ayudas/AyudaFilters';
 import { AyudaCard } from '@/components/ayudas/AyudaCard';
+import tableStyles from '@/components/ayudas/AyudaCard.module.css';
 import { AyudaComentarios } from '@/components/ayudas/AyudaComentarios';
 import { AyudaModal } from '@/components/ayudas/AyudaModal';
 import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
@@ -21,6 +22,7 @@ export default function AyudasPage() {
   const [estadoFiltro, setEstadoFiltro] = useState<EstadoFiltroAyuda>('pendiente');
   const [fotoModal, setFotoModal] = useState<string | null>(null);
   const [paginaActual, setPaginaActual] = useState(1);
+  const tableHeaderRef = useRef<HTMLTableRowElement>(null);
 
   // Comentarios
   const [comentariosModal, setComentariosModal] = useState<Ayuda | null>(null);
@@ -147,9 +149,9 @@ export default function AyudasPage() {
               Arrastra una fila hacia los lados para ver su información. También puedes usar su barra de desplazamiento.
             </p>
             <div className="min-w-0">
-              <table className="block w-full" aria-label="Solicitudes de ayuda">
-                <thead className="sr-only">
-                  <tr>
+              <table key={`${paginaVisible}-${estadoFiltro}-${searchTerm}`} className="block w-full" aria-label="Solicitudes de ayuda">
+                <thead className="block w-full">
+                  <tr ref={tableHeaderRef} className={tableStyles.header}>
                     {['Código', 'Beneficiario', 'Teléfono', 'Tipo', 'Detalle', 'Estado', 'Fecha', 'Acciones'].map((h) => (
                       <th
                         key={h}
@@ -188,6 +190,9 @@ export default function AyudasPage() {
                         onAprobar={(id) => handleEstado(id, 'aprobada')}
                         onRechazar={(id) => handleEstado(id, 'rechazada')}
                         onDelete={handleDelete}
+                        onScrollPositionChange={(scrollLeft) => {
+                          if (tableHeaderRef.current) tableHeaderRef.current.scrollLeft = scrollLeft;
+                        }}
                       />
                     ))
                   )}
