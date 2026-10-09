@@ -82,4 +82,9 @@ export const bonosRegalosApi = {
     const response = await apiClient.get(`/bonos/regalos/estadisticas${params}`);
     return response.data;
   },
+
+  meses: async (): Promise<string[]> => {
+    const response = await apiClient.get('/bonos/regalos/meses');
+    return response.data;
+  },
 };

@@ -52,6 +52,12 @@ export class BonosController {
     return this.bonosService.estadisticas(mes);
   }
 
+  @Get('regalos/meses')
+  @RequierePermiso('bonos:ver')
+  findMeses() {
+    return this.bonosService.findMeses();
+  }
+
   @Get('regalos/:id')
   @RequierePermiso('bonos:ver')
   findOne(@Param('id', ParseUUIDPipe) id: string) {

@@ -206,6 +206,7 @@ export {
 export {
   useBonosRegalos,
   useBonosEstadisticas,
+  useBonosMeses,
   useCrearBonosLote,
   useMarcarEntregado,
   useEliminarBono,

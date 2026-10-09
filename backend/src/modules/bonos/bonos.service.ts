@@ -64,6 +64,17 @@ export class BonosService {
     });
   }
 
+  async findMeses(): Promise<string[]> {
+    const rows = await this.bonoRepo
+      .createQueryBuilder('b')
+      .select('DISTINCT b.mes', 'mes')
+      .where('b.mes IS NOT NULL')
+      .andWhere("b.mes <> ''")
+      .orderBy('b.mes', 'ASC')
+      .getRawMany<{ mes: string }>();
+    return rows.map((r) => r.mes).filter((m) => m && m.trim() !== '');
+  }
+
   async findOne(id: string): Promise<BonoRegalo> {
     const bono = await this.bonoRepo.findOne({
       where: { id },
