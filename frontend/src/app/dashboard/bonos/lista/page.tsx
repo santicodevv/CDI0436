@@ -3,7 +3,7 @@
 import { useState, useRef, useMemo, useEffect } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
-import { useBonosRegalos, useBonosEstadisticas, useMarcarEntregado, useEliminarBono } from '@/lib/hooks';
+import { useBonosRegalos, useBonosEstadisticas, useBonosMeses, useMarcarEntregado, useEliminarBono } from '@/lib/hooks';
 import type { BonoRegalo } from '@/lib/api/bonos';
 import {
   Gift,
@@ -18,11 +18,6 @@ import {
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
-
-const MESES_ES = [
-  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
-];
 
 export default function ListaRegalosPage() {
   const [filtroEntregado, setFiltroEntregado] = useState<boolean | undefined>(undefined);
@@ -48,6 +43,7 @@ export default function ListaRegalosPage() {
   }, [bonos, paginaActual]);
 
   const { data: stats } = useBonosEstadisticas();
+  const { data: meses = [] } = useBonosMeses();
   const marcarEntregadoMutation = useMarcarEntregado();
   const eliminarMutation = useEliminarBono();
 
@@ -150,8 +146,8 @@ export default function ListaRegalosPage() {
                   className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
                 >
                   <option value="">Todos los meses</option>
-                  {MESES_ES.map((mes, i) => (
-                    <option key={i} value={mes}>{mes}</option>
+                  {meses.map((mes) => (
+                    <option key={mes} value={mes}>{mes}</option>
                   ))}
                 </select>
               </div>

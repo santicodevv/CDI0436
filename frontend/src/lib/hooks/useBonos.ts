@@ -7,6 +7,7 @@ export const bonosKeys = {
   lista: (filters?: { mes?: string; entregado?: boolean; buscar?: string }) =>
     [...bonosKeys.regalos(), filters] as const,
   estadisticas: (mes?: string) => [...bonosKeys.regalos(), 'estadisticas', mes] as const,
+  meses: () => [...bonosKeys.regalos(), 'meses'] as const,
 };
 
 export function useBonosRegalos(filters?: { mes?: string; entregado?: boolean; buscar?: string }) {
@@ -20,6 +21,13 @@ export function useBonosEstadisticas(mes?: string) {
   return useQuery({
     queryKey: bonosKeys.estadisticas(mes),
     queryFn: () => bonosRegalosApi.estadisticas(mes),
+  });
+}
+
+export function useBonosMeses() {
+  return useQuery({
+    queryKey: bonosKeys.meses(),
+    queryFn: () => bonosRegalosApi.meses(),
   });
 }
 
