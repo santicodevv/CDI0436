@@ -5,7 +5,7 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In, Between } from 'typeorm';
+import { Repository, In, Between, EntityManager } from 'typeorm';
 import { Supervivencia } from './supervivencia.entity';
 import { AsistenciaSupervivencia } from './asistencia-supervivencia.entity';
 import { FotoAsistenciaSupervivencia } from './foto-asistencia-supervivencia.entity';
@@ -16,6 +16,8 @@ import { AgregarBeneficiariosSupervivenciaDto } from './dto/agregar-beneficiario
 import { RegistrarAsistenciaSupervivenciaDto } from './dto/registrar-asistencia.dto';
 import { Beneficiario } from '../beneficiarios/beneficiario.entity';
 import { Tutor } from '../tutores/tutor.entity';
+import { EncuentroSupervivencia } from './encuentro-supervivencia.entity';
+import { ConfigurarEncuentrosDto } from './dto/configurar-encuentros.dto';
 
 @Injectable()
 export class SupervivenciasService {
@@ -314,67 +316,213 @@ export class SupervivenciasService {
     };
   }
 
+  private async conCursoBloqueado<T>(
+    id: string,
+    operacion: (manager: EntityManager) => Promise<T>,
+  ): Promise<T> {
+    return this.supervivenciasRepository.manager.transaction(
+      async (manager) => {
+        const curso = await manager
+          .getRepository(Supervivencia)
+          .createQueryBuilder('curso')
+          .where('curso.id = :id', { id })
+          .setLock('pessimistic_write')
+          .getOne();
+        if (!curso) {
+          throw new NotFoundException(
+            `Curso de supervivencia con ID ${id} no encontrado`,
+          );
+        }
+        return operacion(manager);
+      },
+    );
+  }
+
+  private rangoMes(mes: string): { inicio: string; fin: string } {
+    if (!/^[1-9]\d{3}-(0[1-9]|1[0-2])$/.test(mes)) {
+      throw new BadRequestException('El mes debe tener el formato YYYY-MM');
+    }
+    const [anio, numeroMes] = mes.split('-').map(Number);
+    const ultimoDia = new Date(Date.UTC(anio, numeroMes, 0)).getUTCDate();
+    return { inicio: `${mes}-01`, fin: `${mes}-${ultimoDia}` };
+  }
+
+  private async fechasConRegistros(
+    manager: EntityManager,
+    id: string,
+    inicio: string,
+    fin: string,
+  ): Promise<string[]> {
+    const asistencias = await manager
+      .getRepository(AsistenciaSupervivencia)
+      .createQueryBuilder('registro')
+      .select('DISTINCT CAST(registro.fecha AS text)', 'fecha')
+      .where('registro.supervivencia_id = :id', { id })
+      .andWhere('registro.fecha BETWEEN :inicio AND :fin', { inicio, fin })
+      .getRawMany<{ fecha: string }>();
+    const fotos = await manager
+      .getRepository(FotoAsistenciaSupervivencia)
+      .createQueryBuilder('registro')
+      .select('DISTINCT CAST(registro.fecha AS text)', 'fecha')
+      .where('registro.supervivencia_id = :id', { id })
+      .andWhere('registro.fecha BETWEEN :inicio AND :fin', { inicio, fin })
+      .getRawMany<{ fecha: string }>();
+    return [...new Set([...asistencias, ...fotos].map((r) => r.fecha))].sort();
+  }
+
+  async getEncuentros(id: string, mes: string) {
+    const { inicio, fin } = this.rangoMes(mes);
+    await this.findOne(id);
+    const manager = this.supervivenciasRepository.manager;
+    const encuentros = await manager
+      .getRepository(EncuentroSupervivencia)
+      .find({
+        where: { supervivencia: { id }, fecha: Between(inicio, fin) },
+        order: { fecha: 'ASC' },
+      });
+    const fechasBloqueadas = await this.fechasConRegistros(
+      manager,
+      id,
+      inicio,
+      fin,
+    );
+    return { fechas: encuentros.map((e) => e.fecha), fechasBloqueadas };
+  }
+
+  private esFechaValida(fecha: string): boolean {
+    const parsed = new Date(`${fecha}T00:00:00Z`);
+    return (
+      /^\d{4}-\d{2}-\d{2}$/.test(fecha) &&
+      Number.isFinite(parsed.getTime()) &&
+      parsed.toISOString().slice(0, 10) === fecha
+    );
+  }
+
+  async configurarEncuentros(id: string, dto: ConfigurarEncuentrosDto) {
+    const { inicio, fin } = this.rangoMes(dto.mes);
+    if (
+      dto.fechas.some((fecha) => {
+        return !this.esFechaValida(fecha) || fecha < inicio || fecha > fin;
+      }) ||
+      new Set(dto.fechas).size !== dto.fechas.length
+    ) {
+      throw new BadRequestException(
+        'Selecciona fechas válidas y sin duplicados dentro del mes indicado',
+      );
+    }
+    return this.conCursoBloqueado(id, async (manager) => {
+      const fechasBloqueadas = await this.fechasConRegistros(
+        manager,
+        id,
+        inicio,
+        fin,
+      );
+      if (fechasBloqueadas.some((fecha) => !dto.fechas.includes(fecha))) {
+        throw new ConflictException(
+          'No se pueden quitar encuentros que ya tienen asistencia o fotos',
+        );
+      }
+      const repository = manager.getRepository(EncuentroSupervivencia);
+      const existentes = await repository.find({
+        where: { supervivencia: { id }, fecha: Between(inicio, fin) },
+      });
+      const quitar = existentes.filter((e) => !dto.fechas.includes(e.fecha));
+      if (quitar.length) await repository.delete(quitar.map((e) => e.id));
+      const agregar = dto.fechas.filter(
+        (fecha) => !existentes.some((e) => e.fecha === fecha),
+      );
+      if (agregar.length) {
+        await repository.insert(
+          agregar.map((fecha) => ({ supervivencia: { id }, fecha })),
+        );
+      }
+      return { fechas: [...dto.fechas].sort(), fechasBloqueadas };
+    });
+  }
+
+  private async validarEncuentro(
+    manager: EntityManager,
+    id: string,
+    fecha: string,
+  ) {
+    if (
+      !this.esFechaValida(fecha) ||
+      !(await manager.getRepository(EncuentroSupervivencia).exists({
+        where: { supervivencia: { id }, fecha },
+      }))
+    ) {
+      throw new BadRequestException(
+        'Solo puedes registrar asistencia o fotos en un encuentro configurado',
+      );
+    }
+  }
+
   // Registrar asistencia para un curso de supervivencia
   async registrarAsistencia(
     id: string,
     registrarAsistenciaDto: RegistrarAsistenciaSupervivenciaDto,
   ): Promise<AsistenciaSupervivencia[]> {
-    const supervivencia = await this.supervivenciasRepository.findOne({
-      where: { id },
-      relations: ['beneficiarios', 'tutor'],
-    });
+    return this.conCursoBloqueado(id, async (manager) => {
+      await this.validarEncuentro(manager, id, registrarAsistenciaDto.fecha);
+      const supervivencia = await manager.getRepository(Supervivencia).findOne({
+        where: { id },
+        relations: ['beneficiarios', 'tutor'],
+      });
 
-    if (!supervivencia) {
-      throw new NotFoundException(
-        `Curso de supervivencia con ID ${id} no encontrado`,
-      );
-    }
-
-    const fecha = new Date(registrarAsistenciaDto.fecha);
-    const asistenciasGuardadas: AsistenciaSupervivencia[] = [];
-
-    for (const asistenciaDto of registrarAsistenciaDto.asistencias) {
-      // Verificar que el beneficiario esté inscrito en el curso
-      const beneficiarioInscrito = supervivencia.beneficiarios?.find(
-        (b) => b.id === asistenciaDto.beneficiario_id,
-      );
-
-      if (!beneficiarioInscrito) {
-        throw new BadRequestException(
-          `El beneficiario con ID ${asistenciaDto.beneficiario_id} no está inscrito en este curso`,
+      if (!supervivencia) {
+        throw new NotFoundException(
+          `Curso de supervivencia con ID ${id} no encontrado`,
         );
       }
 
-      // Buscar si ya existe asistencia para ese día
-      let asistencia = await this.asistenciasRepository.findOne({
-        where: {
-          supervivencia: { id },
-          beneficiario: { id: asistenciaDto.beneficiario_id },
-          fecha: fecha,
-        },
-      });
+      const fecha = new Date(registrarAsistenciaDto.fecha);
+      const asistenciasGuardadas: AsistenciaSupervivencia[] = [];
 
-      if (asistencia) {
-        // Actualizar asistencia existente
-        asistencia.presente = asistenciaDto.presente;
-        asistencia.observaciones = asistenciaDto.observaciones || undefined;
-      } else {
-        // Crear nueva asistencia
-        asistencia = this.asistenciasRepository.create({
-          supervivencia: { id } as Supervivencia,
-          beneficiario: { id: asistenciaDto.beneficiario_id } as Beneficiario,
-          fecha: fecha,
-          presente: asistenciaDto.presente,
-          observaciones: asistenciaDto.observaciones || undefined,
-        });
+      for (const asistenciaDto of registrarAsistenciaDto.asistencias) {
+        // Verificar que el beneficiario esté inscrito en el curso
+        const beneficiarioInscrito = supervivencia.beneficiarios?.find(
+          (b) => b.id === asistenciaDto.beneficiario_id,
+        );
+
+        if (!beneficiarioInscrito) {
+          throw new BadRequestException(
+            `El beneficiario con ID ${asistenciaDto.beneficiario_id} no está inscrito en este curso`,
+          );
+        }
+
+        // Buscar si ya existe asistencia para ese día
+        let asistencia = await manager
+          .getRepository(AsistenciaSupervivencia)
+          .findOne({
+            where: {
+              supervivencia: { id },
+              beneficiario: { id: asistenciaDto.beneficiario_id },
+              fecha: fecha,
+            },
+          });
+
+        if (asistencia) {
+          // Actualizar asistencia existente
+          asistencia.presente = asistenciaDto.presente;
+          asistencia.observaciones = asistenciaDto.observaciones || undefined;
+        } else {
+          // Crear nueva asistencia
+          asistencia = manager.getRepository(AsistenciaSupervivencia).create({
+            supervivencia: { id } as Supervivencia,
+            beneficiario: { id: asistenciaDto.beneficiario_id } as Beneficiario,
+            fecha: fecha,
+            presente: asistenciaDto.presente,
+            observaciones: asistenciaDto.observaciones || undefined,
+          });
+        }
+
+        asistenciasGuardadas.push(
+          await manager.getRepository(AsistenciaSupervivencia).save(asistencia),
+        );
       }
 
-      asistenciasGuardadas.push(
-        await this.asistenciasRepository.save(asistencia),
-      );
-    }
-
-    return asistenciasGuardadas;
+      return asistenciasGuardadas;
+    });
   }
 
   // Obtener asistencias de un curso por fecha
@@ -505,10 +653,10 @@ export class SupervivenciasService {
 
     const result = await this.asistenciasRepository
       .createQueryBuilder('asistencia')
-      .select('DISTINCT DATE(asistencia.fecha)', 'fecha')
+      .select('DISTINCT CAST(asistencia.fecha AS text)', 'fecha')
       .where('asistencia.supervivencia_id = :id', { id })
       .orderBy('fecha', 'DESC')
-      .getRawMany();
+      .getRawMany<{ fecha: string }>();
 
     return result.map((r) => r.fecha);
   }
@@ -521,26 +669,31 @@ export class SupervivenciasService {
     fecha: string,
     imagenBase64: string,
   ): Promise<FotoAsistenciaSupervivencia> {
-    const supervivencia = await this.supervivenciasRepository.findOne({
-      where: { id: supervivenciaId },
+    return this.conCursoBloqueado(supervivenciaId, async (manager) => {
+      await this.validarEncuentro(manager, supervivenciaId, fecha);
+      const supervivencia = await manager.getRepository(Supervivencia).findOne({
+        where: { id: supervivenciaId },
+      });
+
+      if (!supervivencia) {
+        throw new NotFoundException(
+          `Curso de supervivencia con ID ${supervivenciaId} no encontrado`,
+        );
+      }
+
+      const fechaDate = new Date(`${fecha}T12:00:00`);
+
+      // Crear nuevo registro (se permiten múltiples fotos por supervivencia y fecha)
+      const foto = manager.getRepository(FotoAsistenciaSupervivencia).create({
+        supervivencia,
+        fecha: fechaDate,
+        imagen_url: imagenBase64,
+      });
+
+      return await manager
+        .getRepository(FotoAsistenciaSupervivencia)
+        .save(foto);
     });
-
-    if (!supervivencia) {
-      throw new NotFoundException(
-        `Curso de supervivencia con ID ${supervivenciaId} no encontrado`,
-      );
-    }
-
-    const fechaDate = new Date(`${fecha}T12:00:00`);
-
-    // Crear nuevo registro (se permiten múltiples fotos por supervivencia y fecha)
-    const foto = this.fotosRepository.create({
-      supervivencia,
-      fecha: fechaDate,
-      imagen_url: imagenBase64,
-    });
-
-    return await this.fotosRepository.save(foto);
   }
 
   // Obtener todas las fotos por supervivencia y fecha

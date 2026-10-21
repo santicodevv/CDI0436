@@ -19,6 +19,10 @@ import { UpdateSupervivenciaDto } from './dto/update-supervivencia.dto';
 import { FilterSupervivenciaDto } from './dto/filter-supervivencia.dto';
 import { AgregarBeneficiariosSupervivenciaDto } from './dto/agregar-beneficiarios.dto';
 import { RegistrarAsistenciaSupervivenciaDto } from './dto/registrar-asistencia.dto';
+import {
+  ConfigurarEncuentrosDto,
+  MesEncuentrosDto,
+} from './dto/configurar-encuentros.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PermisosGuard } from '../auth/guards/permisos.guard';
 import { RequierePermiso } from '../auth/decorators/permisos.decorator';
@@ -101,6 +105,24 @@ export class SupervivenciasController {
   @RequierePermiso('supervivencia:editar')
   softDelete(@Param('id', ParseUUIDPipe) id: string) {
     return this.supervivenciasService.softDelete(id);
+  }
+
+  @Get(':id/encuentros')
+  @RequierePermiso('supervivencia:ver')
+  getEncuentros(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query() query: MesEncuentrosDto,
+  ) {
+    return this.supervivenciasService.getEncuentros(id, query.mes);
+  }
+
+  @Patch(':id/encuentros')
+  @RequierePermiso('supervivencia:editar')
+  configurarEncuentros(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: ConfigurarEncuentrosDto,
+  ) {
+    return this.supervivenciasService.configurarEncuentros(id, dto);
   }
 
   // Endpoints de asistencia

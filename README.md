@@ -16,7 +16,7 @@ CDI0436 es una aplicación web completa para la gestión integral de un Centro d
 - **Módulo de Mérito Escolar**: Registro de notas por período y cálculo de ganadores por ciclo (Primaria/Secundaria)
 - **Módulo de Nutrición**: Control de menús diarios por tanda (matutina/vespertina)
 - **Módulo de Ayudas**: Gestión de solicitudes de ayuda con comentarios y fotos de entrega, integración WhatsApp
-- **Módulo de Supervivencia**: Curso extracurricular con asistencia y fotos independiente
+- **Módulo de Supervivencia**: Curso extracurricular con encuentros configurables por mes, asistencia y fotos independientes
 - **Sistema de Reportes**: Generación de reportes en Excel y PDF
 - **Autenticación Segura**: JWT con soporte para "Recordarme" y cambio de contraseña en primer inicio
 - **Validación de Datos**: Validación exhaustiva en cliente y servidor con class-validator y Zod

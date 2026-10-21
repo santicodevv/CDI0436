@@ -17,6 +17,11 @@ interface RegistrarAsistenciaData {
   asistencias: AsistenciaBeneficiario[];
 }
 
+export interface EncuentrosSupervivenciaResponse {
+  fechas: string[];
+  fechasBloqueadas: string[];
+}
+
 export const supervivenciasApi = {
   getAll: async (filters?: Record<string, string>): Promise<Supervivencia[]> => {
     const params = new URLSearchParams();
@@ -72,6 +77,16 @@ export const supervivenciasApi = {
 
   removerBeneficiario: async (id: string, beneficiarioId: string): Promise<void> => {
     await apiClient.delete(`/supervivencias/${id}/beneficiarios/${beneficiarioId}`);
+  },
+
+  getEncuentros: async (id: string, mes: string): Promise<EncuentrosSupervivenciaResponse> => {
+    const response = await apiClient.get(`/supervivencias/${id}/encuentros`, { params: { mes } });
+    return response.data;
+  },
+
+  configurarEncuentros: async (id: string, mes: string, fechas: string[]): Promise<EncuentrosSupervivenciaResponse> => {
+    const response = await apiClient.patch(`/supervivencias/${id}/encuentros`, { mes, fechas });
+    return response.data;
   },
 
   // Métodos de asistencia

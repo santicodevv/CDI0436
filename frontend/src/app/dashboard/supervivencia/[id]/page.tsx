@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { format } from 'date-fns';
 import { useParams, useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
@@ -11,10 +12,10 @@ import SupervivenciaInfo from '@/components/supervivencia/SupervivenciaInfo';
 import SupervivenciaStats from '@/components/supervivencia/SupervivenciaStats';
 import SupervivenciaBeneficiarios from '@/components/supervivencia/SupervivenciaBeneficiarios';
 import SupervivenciaAsistencia from '@/components/supervivencia/SupervivenciaAsistencia';
+import SupervivenciaEncuentros from '@/components/supervivencia/SupervivenciaEncuentros';
 import { useAuth } from '@/contexts/AuthContext';
-import { useSupervivencia, useFechasConAsistencia, useAsistenciasSupervivencia, useAgregarBeneficiariosSupervivencia } from '@/lib/hooks/useSupervivencias';
-import { TabType } from '@/lib/types';
-import { ArrowLeft, UserPlus, Users, ClipboardCheck, Shield, Clock } from 'lucide-react';
+import { useSupervivencia, useFechasConAsistencia, useAsistenciasSupervivencia, useAgregarBeneficiariosSupervivencia, useEncuentrosSupervivencia } from '@/lib/hooks/useSupervivencias';
+import { ArrowLeft, UserPlus, Users, ClipboardCheck, Shield, Clock, Calendar } from 'lucide-react';
 
 export default function SupervivenciaDetallePage() {
   const params = useParams();
@@ -23,7 +24,8 @@ export default function SupervivenciaDetallePage() {
   const { tienePermiso } = useAuth();
   const puedeEditar = tienePermiso('supervivencia:editar');
 
-  const [activeTab, setActiveTab] = useState<TabType>('beneficiarios');
+  const [activeTab, setActiveTab] = useState<'beneficiarios' | 'asistencia' | 'encuentros'>('beneficiarios');
+  const [mesEncuentros, setMesEncuentros] = useState(() => format(new Date(), 'yyyy-MM'));
   const [showAgregarModal, setShowAgregarModal] = useState(false);
 
   // Queries
@@ -31,8 +33,10 @@ export default function SupervivenciaDetallePage() {
   const { data: fechasConAsistencia = [] } = useFechasConAsistencia(supervivenciaId);
 
   // Today's attendance for the stats card
-  const today = new Date().toISOString().split('T')[0];
-  const { data: todayAsistencia } = useAsistenciasSupervivencia(supervivenciaId, today);
+  const today = format(new Date(), 'yyyy-MM-dd');
+  const { data: encuentrosActuales } = useEncuentrosSupervivencia(supervivenciaId, today.slice(0, 7));
+  const hayEncuentroHoy = encuentrosActuales?.fechas.includes(today) ?? false;
+  const { data: todayAsistencia } = useAsistenciasSupervivencia(supervivenciaId, hayEncuentroHoy ? today : '');
 
   // Mutations
   const agregarMutation = useAgregarBeneficiariosSupervivencia();
@@ -124,7 +128,7 @@ export default function SupervivenciaDetallePage() {
                   <div className="text-center py-4">
                     <Clock className="w-8 h-8 text-gray-400 mx-auto mb-2" />
                     <p className="text-gray-500 text-sm">
-                      Ve al tab de Asistencia para registrar
+                      {hayEncuentroHoy ? 'Ve a Pasar Asistencia para registrar el encuentro de hoy' : 'No hay un encuentro programado para hoy'}
                     </p>
                   </div>
                 )}
@@ -133,10 +137,10 @@ export default function SupervivenciaDetallePage() {
 
             {/* Tabs */}
             <div className="border-b border-gray-200">
-              <nav className="-mb-px flex space-x-8">
+              <nav className="-mb-px flex gap-4 sm:gap-8 overflow-x-auto">
                 <button
                   onClick={() => setActiveTab('beneficiarios')}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
                     activeTab === 'beneficiarios'
                       ? 'border-orange-500 text-orange-600'
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -147,7 +151,7 @@ export default function SupervivenciaDetallePage() {
                 </button>
                 <button
                   onClick={() => setActiveTab('asistencia')}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
                     activeTab === 'asistencia'
                       ? 'border-orange-500 text-orange-600'
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -155,6 +159,13 @@ export default function SupervivenciaDetallePage() {
                 >
                   <ClipboardCheck className="w-4 h-4 inline mr-2" />
                   Pasar Asistencia
+                </button>
+                <button
+                  onClick={() => setActiveTab('encuentros')}
+                  className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${activeTab === 'encuentros' ? 'border-orange-500 text-orange-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+                >
+                  <Calendar className="w-4 h-4 inline mr-2" />
+                  Encuentros
                 </button>
               </nav>
             </div>
@@ -173,7 +184,16 @@ export default function SupervivenciaDetallePage() {
                 supervivenciaId={supervivenciaId}
                 supervivencia={supervivencia}
                 fechasConAsistencia={fechasConAsistencia}
+                mes={mesEncuentros}
+                onCambiarMes={setMesEncuentros}
+                onConfigurarEncuentros={() => setActiveTab('encuentros')}
+                puedeEditar={puedeEditar}
               />
+            )}
+
+            {activeTab === 'encuentros' && (
+              <SupervivenciaEncuentros supervivenciaId={supervivenciaId} mes={mesEncuentros}
+                onCambiarMes={setMesEncuentros} puedeEditar={puedeEditar} />
             )}
 
             {/* Modal Agregar Beneficiarios */}
