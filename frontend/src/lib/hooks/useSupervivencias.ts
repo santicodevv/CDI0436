@@ -15,7 +15,27 @@ export const supervivenciasKeys = {
   fechasConAsistencia: (id: string) =>
     [...supervivenciasKeys.all, 'fechas', id] as const,
   estadisticas: (id: string) => [...supervivenciasKeys.all, 'estadisticas', id] as const,
+  encuentros: (id: string, mes: string) => [...supervivenciasKeys.all, 'encuentros', id, mes] as const,
 };
+
+export function useEncuentrosSupervivencia(id: string, mes: string) {
+  return useQuery({
+    queryKey: supervivenciasKeys.encuentros(id, mes),
+    queryFn: () => supervivenciasApi.getEncuentros(id, mes),
+    enabled: !!id && !!mes,
+  });
+}
+
+export function useConfigurarEncuentrosSupervivencia() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, mes, fechas }: { id: string; mes: string; fechas: string[] }) =>
+      supervivenciasApi.configurarEncuentros(id, mes, fechas),
+    onSuccess: (data, { id, mes }) => {
+      queryClient.setQueryData(supervivenciasKeys.encuentros(id, mes), data);
+    },
+  });
+}
 
 export function useSupervivencias(filters?: Record<string, string>) {
   return useQuery({
@@ -139,6 +159,7 @@ export function useSubirFotoSupervivencia() {
       queryClient.invalidateQueries({
         queryKey: [...supervivenciasKeys.all, 'fotos', variables.supervivenciaId, variables.fecha],
       });
+      queryClient.invalidateQueries({ queryKey: [...supervivenciasKeys.all, 'encuentros', variables.supervivenciaId] });
     },
   });
 }
@@ -150,6 +171,7 @@ export function useEliminarFotoSupervivencia() {
       supervivenciasApi.eliminarFoto(supervivenciaId, fotoId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [...supervivenciasKeys.all, 'fotos'] });
+      queryClient.invalidateQueries({ queryKey: [...supervivenciasKeys.all, 'encuentros'] });
     },
   });
 }

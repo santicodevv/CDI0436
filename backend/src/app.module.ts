@@ -14,6 +14,7 @@ import { BeneficiarioExpediente } from './modules/beneficiarios/beneficiario-exp
 import { Rol } from './modules/roles/entities/rol.entity';
 import { Permiso } from './modules/roles/entities/permiso.entity';
 import { Supervivencia } from './modules/supervivencias/supervivencia.entity';
+import { EncuentroSupervivencia } from './modules/supervivencias/encuentro-supervivencia.entity';
 import { AsistenciaSupervivencia } from './modules/supervivencias/asistencia-supervivencia.entity';
 import { FotoAsistenciaSupervivencia } from './modules/supervivencias/foto-asistencia-supervivencia.entity';
 import { Club } from './modules/clubs/club.entity';
@@ -71,6 +72,7 @@ import { BonosModule } from './modules/bonos/bonos.module';
             Rol,
             Permiso,
             Supervivencia,
+            EncuentroSupervivencia,
             AsistenciaSupervivencia,
             FotoAsistenciaSupervivencia,
             Club,

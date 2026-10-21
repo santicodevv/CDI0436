@@ -1,6 +1,9 @@
 'use client';
 
 import { useState, useRef, useCallback, useMemo, useEffect } from 'react';
+import { format, parseISO } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { isAxiosError } from 'axios';
 import {
   Calendar,
   Check,
@@ -14,6 +17,8 @@ import {
   Users,
 } from 'lucide-react';
 import Button from '@/components/ui/Button';
+import Alert from '@/components/ui/Alert';
+import SupervivenciaMesSelector from './SupervivenciaMesSelector';
 import {
   Supervivencia,
   AsistenciaLocal,
@@ -24,22 +29,70 @@ import {
   useFotosSupervivencia,
   useSubirFotoSupervivencia,
   useEliminarFotoSupervivencia,
+  useEncuentrosSupervivencia,
 } from '@/lib/hooks/useSupervivencias';
 
 interface SupervivenciaAsistenciaProps {
   supervivenciaId: string;
   supervivencia: Supervivencia;
   fechasConAsistencia: string[];
+  mes: string;
+  onCambiarMes: (mes: string) => void;
+  onConfigurarEncuentros: () => void;
+  puedeEditar: boolean;
 }
 
 export default function SupervivenciaAsistencia({
   supervivenciaId,
   supervivencia,
   fechasConAsistencia,
+  mes,
+  onCambiarMes,
+  onConfigurarEncuentros,
+  puedeEditar,
 }: SupervivenciaAsistenciaProps) {
-  const [fechaAsistencia, setFechaAsistencia] = useState(
-    new Date().toISOString().split('T')[0]
+  const { data, isPending, isError, refetch } = useEncuentrosSupervivencia(supervivenciaId, mes);
+  const [seleccionada, setSeleccionada] = useState('');
+  const fechas = data?.fechas ?? [];
+  const hoy = format(new Date(), 'yyyy-MM-dd');
+  const fecha = fechas.includes(seleccionada) ? seleccionada : fechas.includes(hoy) ? hoy : fechas[0];
+
+  return (
+    <div className="space-y-4">
+      <section className="bg-white rounded-lg shadow p-4 sm:p-6 space-y-4">
+        <h2 className="text-lg font-semibold text-gray-900">Encuentros para pasar asistencia</h2>
+        <SupervivenciaMesSelector mes={mes} onChange={onCambiarMes} />
+        {isPending ? <p className="text-gray-500">Cargando encuentros…</p> : isError ? (
+          <Alert variant="error">No se pudieron cargar los encuentros. <button type="button" className="underline" onClick={() => refetch()}>Reintentar</button></Alert>
+        ) : fechas.length === 0 ? (
+          <div className="space-y-3">
+            <p className="text-gray-600">No hay encuentros configurados para este mes.</p>
+            {puedeEditar && <Button variant="outline" onClick={onConfigurarEncuentros}>Configurar encuentros</Button>}
+          </div>
+        ) : (
+          <div className="flex flex-wrap gap-3">
+            {fechas.map((dia) => (
+              <button type="button" key={dia} aria-pressed={fecha === dia} onClick={() => setSeleccionada(dia)}
+                className={`px-4 py-3 rounded-lg border-2 text-sm capitalize ${fecha === dia ? 'bg-orange-600 border-orange-600 text-white' : 'border-gray-200 text-gray-700 hover:border-orange-400'}`}>
+                {format(parseISO(dia), 'EEEE d', { locale: es })}
+                {fechasConAsistencia.includes(dia) && <span className="block text-xs mt-1">Asistencia registrada</span>}
+              </button>
+            ))}
+          </div>
+        )}
+      </section>
+      {!isPending && !isError && fecha && (
+        <RegistroEncuentro key={`${supervivenciaId}-${fecha}`} supervivenciaId={supervivenciaId}
+          supervivencia={supervivencia} fechasConAsistencia={fechasConAsistencia}
+          fechaAsistencia={fecha} puedeEditar={puedeEditar} />
+      )}
+    </div>
   );
+}
+
+function RegistroEncuentro({
+  supervivenciaId, supervivencia, fechasConAsistencia, fechaAsistencia, puedeEditar,
+}: Pick<SupervivenciaAsistenciaProps, 'supervivenciaId' | 'supervivencia' | 'fechasConAsistencia' | 'puedeEditar'> & { fechaAsistencia: string }) {
   const [asistenciasLocales, setAsistenciasLocales] = useState<AsistenciaLocal[]>([]);
   const [lightboxFoto, setLightboxFoto] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -48,6 +101,7 @@ export default function SupervivenciaAsistencia({
   const {
     data: asistenciasData,
     isLoading: loadingAsistencia,
+    error: errorAsistencia,
   } = useAsistenciasSupervivencia(supervivenciaId, fechaAsistencia);
 
   // Track which key we've initialized to avoid re-initializing on refetch
@@ -106,6 +160,7 @@ export default function SupervivenciaAsistencia({
   );
 
   const handleGuardarAsistencia = async () => {
+    if (!puedeEditar || loadingAsistencia || errorAsistencia || !asistenciasData || asistenciasLocales.length !== asistenciasData.asistencias.length) return;
     try {
       await registrarMutation.mutateAsync({
         id: supervivenciaId,
@@ -128,6 +183,7 @@ export default function SupervivenciaAsistencia({
   }, []);
 
   const handleSubirFoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!puedeEditar) return;
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
@@ -186,28 +242,26 @@ export default function SupervivenciaAsistencia({
         {/* Header con fecha y acciones */}
         <div className="p-6 border-b border-gray-200">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="flex items-center gap-4">
+            <div className="flex flex-wrap items-center gap-3">
               <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                 <Calendar className="w-5 h-5 text-orange-600" />
                 Pasar Asistencia
               </h2>
-              <input
-                type="date"
-                value={fechaAsistencia}
-                onChange={(e) => setFechaAsistencia(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-              />
+              <span className="text-sm text-gray-700 capitalize">
+                {format(parseISO(fechaAsistencia), "EEEE d 'de' MMMM", { locale: es })}
+              </span>
               {yaRegistrada && (
                 <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
                   Ya registrada
                 </span>
               )}
             </div>
-            <div className="flex items-center gap-2">
+            {puedeEditar && <div className="flex flex-wrap items-center gap-2">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => marcarTodos(true)}
+                disabled={loadingAsistencia || !!errorAsistencia || !asistenciasData || registrarMutation.isPending}
                 className="flex items-center gap-1"
               >
                 <Check className="w-4 h-4" />
@@ -217,6 +271,7 @@ export default function SupervivenciaAsistencia({
                 variant="outline"
                 size="sm"
                 onClick={() => marcarTodos(false)}
+                disabled={loadingAsistencia || !!errorAsistencia || !asistenciasData || registrarMutation.isPending}
                 className="flex items-center gap-1"
               >
                 <X className="w-4 h-4" />
@@ -225,14 +280,19 @@ export default function SupervivenciaAsistencia({
               <Button
                 onClick={handleGuardarAsistencia}
                 isLoading={registrarMutation.isPending}
+                disabled={loadingAsistencia || !!errorAsistencia || !asistenciasData || asistenciasLocales.length === 0 || asistenciasLocales.length !== asistenciasData.asistencias.length}
                 className="flex items-center gap-1"
               >
                 <Save className="w-4 h-4" />
                 Guardar
               </Button>
-            </div>
+            </div>}
           </div>
         </div>
+
+        {registrarMutation.isSuccess && <Alert variant="success" className="m-4">Asistencia guardada.</Alert>}
+        {registrarMutation.isError && <Alert variant="error" className="m-4">{isAxiosError<{ message?: string }>(registrarMutation.error) ? registrarMutation.error.response?.data.message || 'No se pudo guardar la asistencia.' : 'No se pudo guardar la asistencia.'}</Alert>}
+        {errorAsistencia && <Alert variant="error" className="m-4">No se pudo cargar la asistencia. Inténtalo nuevamente.</Alert>}
 
         {/* Fotos del día — galería multi-foto */}
         <div className="border-b border-gray-200">
@@ -256,7 +316,7 @@ export default function SupervivenciaAsistencia({
             />
             <button
               onClick={() => fileInputRef.current?.click()}
-              disabled={subirFotoMutation.isPending || loadingFoto}
+              disabled={!puedeEditar || subirFotoMutation.isPending || loadingFoto}
               className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors disabled:opacity-50"
             >
               {subirFotoMutation.isPending ? (
@@ -305,6 +365,7 @@ export default function SupervivenciaAsistencia({
                         <ZoomIn className="w-3.5 h-3.5 text-gray-700" />
                       </button>
                       <button
+                        disabled={!puedeEditar || eliminarFotoMutation.isPending}
                         className="opacity-0 group-hover:opacity-100 p-1.5 bg-red-500/90 rounded-full shadow hover:bg-red-600 transition-all scale-90 group-hover:scale-100"
                         onClick={(e) => {
                           e.stopPropagation();
@@ -393,6 +454,7 @@ export default function SupervivenciaAsistencia({
                     {/* Botones de asistencia */}
                     <div className="flex items-center gap-2">
                       <button
+                        disabled={!puedeEditar || registrarMutation.isPending}
                         onClick={() =>
                           handleAsistenciaChange(asistencia.beneficiario.id, true)
                         }
@@ -406,6 +468,7 @@ export default function SupervivenciaAsistencia({
                         <Check className="w-5 h-5" />
                       </button>
                       <button
+                        disabled={!puedeEditar || registrarMutation.isPending}
                         onClick={() =>
                           handleAsistenciaChange(asistencia.beneficiario.id, false)
                         }
@@ -424,6 +487,7 @@ export default function SupervivenciaAsistencia({
                     <div className="hidden sm:block w-48">
                       <input
                         type="text"
+                        disabled={!puedeEditar || registrarMutation.isPending}
                         placeholder="Observaciones..."
                         value={local?.observaciones || ''}
                         onChange={(e) =>
