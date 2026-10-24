@@ -46,6 +46,9 @@ export const formatFechasExport = (registros: { estado?: string; fecha: string }
     .join(', ') || '-';
 };
 
+export const formatFechaCompletaEs = (fecha: string): string =>
+  fecha ? `${formatFechaEs(fecha)}/${fecha.slice(0, 4)}` : '-';
+
 // ── Period calculation ───────────────────────────────────────────────────────
 
 export function calcularFechasPeriodo(params: {

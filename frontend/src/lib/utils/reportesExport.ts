@@ -2,7 +2,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { exportToPDF } from './exportPDF';
 import { exportToExcel } from './exportExcel';
-import { formatFechaEs, formatFechasExport } from './formatters';
+import { formatFechaEs, formatFechasExport, formatFechaCompletaEs } from './formatters';
 
 // ── CLASE ────────────────────────────────────────────────────────────────────
 
@@ -49,6 +49,7 @@ interface ClaseData {
   clases?: Array<{
     clase: { nombre: string; codigo?: string };
     fechasRegistro?: string[];
+    fechasSinRegistro?: string[];
     estadisticas?: { diasConAsistenciaRegistrada?: number };
   }>;
 }
@@ -160,7 +161,8 @@ export const generarPDFTutor = (data: ClaseData, fechaReporte: string) => {
   const clases = (data.clases || []).map((item) => ({
     clase: item.clase.nombre,
     codigo: item.clase.codigo || '-',
-    fechas: (item.fechasRegistro || []).map((f: string) => formatFechaEs(f)).join(', ') || '-',
+    fechasSinRegistro: (item.fechasSinRegistro || []).map(formatFechaCompletaEs).join(', ') || 'Ninguna',
+    fechasRegistro: (item.fechasRegistro || []).map(formatFechaCompletaEs).join(', ') || 'Ninguna',
     totalDias: item.estadisticas?.diasConAsistenciaRegistrada || 0,
   }));
   exportToPDF({
@@ -168,8 +170,8 @@ export const generarPDFTutor = (data: ClaseData, fechaReporte: string) => {
     subtitulo: `Especialidad: ${data.tutor?.especialidad || 'No especificada'}`,
     fecha: fechaReporte,
     datos: clases,
-    columnas: ['clase', 'codigo', 'totalDias', 'fechas'],
-    headers: ['Clase', 'Código Clase', 'Días Pasó Lista', 'Fechas de Asistencia'],
+    columnas: ['clase', 'codigo', 'totalDias', 'fechasSinRegistro', 'fechasRegistro'],
+    headers: ['Clase', 'Código Clase', 'Días Pasó Lista', 'Fechas en que no pasó lista', 'Fechas en que sí pasó lista'],
     totales: [
       { label: 'Total Clases', value: data.estadisticas?.totalClasesAsignadas || 0 },
       { label: 'Días Únicos Registró', value: data.estadisticas?.totalDiasConRegistroGlobal || 0 },
@@ -182,8 +184,8 @@ export const generarExcelTutor = (data: ClaseData) => {
     Clase: item.clase.nombre,
     'Código Clase': item.clase.codigo || '-',
     'Días Pasó Lista': item.estadisticas?.diasConAsistenciaRegistrada || 0,
-    'Fechas de Asistencia':
-      (item.fechasRegistro || []).map((f: string) => formatFechaEs(f)).join(', ') || '-',
+    'Fechas en que no pasó lista': (item.fechasSinRegistro || []).map(formatFechaCompletaEs).join(', ') || 'Ninguna',
+    'Fechas en que sí pasó lista': (item.fechasRegistro || []).map(formatFechaCompletaEs).join(', ') || 'Ninguna',
   }));
   const estadisticas = [
     { Métrica: 'Total Clases', Valor: data.estadisticas?.totalClasesAsignadas || 0 },

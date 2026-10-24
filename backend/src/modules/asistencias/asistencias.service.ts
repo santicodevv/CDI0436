@@ -17,6 +17,7 @@ import { JustificarMasivoDto } from './dto/justificar-masivo.dto';
 import { Clase } from '../clases/clase.entity';
 import { Beneficiario } from '../beneficiarios/beneficiario.entity';
 import { Tutor } from '../tutores/tutor.entity';
+import { fechasSinListaClase, validarPeriodoTutor } from './fechas-pase-lista';
 
 @Injectable()
 export class AsistenciasService {
@@ -475,6 +476,13 @@ export class AsistenciasService {
     fechaInicio?: string,
     fechaFin?: string,
   ): Promise<any> {
+    validarPeriodoTutor(fechaInicio, fechaFin);
+    const hoy = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/Santo_Domingo',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(new Date());
     const tutor = await this.tutoresRepository.findOne({
       where: { id: tutorId },
     });
@@ -493,12 +501,9 @@ export class AsistenciasService {
       .leftJoinAndSelect('asistencia.clase', 'clase')
       .where('clase.tutor.id = :tutorId', { tutorId });
 
-    if (fechaInicio && fechaFin) {
-      query.andWhere('asistencia.fecha BETWEEN :fechaInicio AND :fechaFin', {
-        fechaInicio,
-        fechaFin,
-      });
-    }
+    if (fechaInicio)
+      query.andWhere('asistencia.fecha >= :fechaInicio', { fechaInicio });
+    if (fechaFin) query.andWhere('asistencia.fecha <= :fechaFin', { fechaFin });
 
     const asistencias = await query.getMany();
 
@@ -531,6 +536,16 @@ export class AsistenciasService {
           diasConAsistenciaRegistrada: fechasUnicas.length,
         },
         fechasRegistro: fechasUnicas,
+        fechasSinRegistro: clase.beneficiarios?.some((b) => b.activo)
+          ? fechasSinListaClase(
+              clase.horarios || [],
+              fechasUnicas,
+              clase.creado_en,
+              fechaInicio,
+              fechaFin,
+              hoy,
+            )
+          : [],
       };
     });
 

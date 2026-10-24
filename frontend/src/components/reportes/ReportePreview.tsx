@@ -1,7 +1,7 @@
 'use client';
 
 import { Eye, FileText, FileSpreadsheet } from 'lucide-react';
-import { formatFechaEs } from '@/lib/utils/formatters';
+import { formatFechaEs, formatFechaCompletaEs } from '@/lib/utils/formatters';
 import type { ReportContext, ReporteContextGlobal, ReporteContextAusencias, StatItem, TableRow, ReporteAsistenciaFechaItem as RegistroFecha } from '@/lib/types';
 import GraficoAsistencia from './GraficoAsistencia';
 import ReporteEstadisticoTable from './ReporteEstadisticoTable';
@@ -44,6 +44,18 @@ function renderDateChips(registros: RegistroFecha[], estado: string, colorClass:
       </div>
     </div>
   );
+}
+
+function renderFechasTutor(fechas: string[], colorClass: string) {
+  return fechas.length ? (
+    <div className="flex flex-wrap gap-1 min-w-[150px] max-w-[280px]">
+      {fechas.map((fecha) => (
+        <span key={fecha} className={`inline-flex px-2 py-0.5 rounded-lg text-xs font-medium border ${colorClass}`}>
+          {formatFechaCompletaEs(fecha)}
+        </span>
+      ))}
+    </div>
+  ) : <span className="text-gray-400 text-xs">Ninguna</span>;
 }
 
 export default function ReportePreview({
@@ -103,26 +115,14 @@ export default function ReportePreview({
       { label: 'Días Registró Lista', value: reportData.estadisticas?.totalDiasConRegistroGlobal || 0 },
     ];
     subtitle = reportData.tutor?.nombre || '';
-    tableHeaders = ['Clase', 'Código Clase', 'Días Pasó Lista', 'Fechas de Registro'];
-    tableRows = (reportData.clases || []).map((item: { clase: { nombre: string; codigo?: string; id: string }; estadisticas: { diasConAsistenciaRegistrada: number }; fechasRegistro: string[] }) => ({
+    tableHeaders = ['Clase', 'Código Clase', 'Días Pasó Lista', 'Fechas en que no pasó lista', 'Fechas en que sí pasó lista'];
+    tableRows = (reportData.clases || []).map((item: { clase: { nombre: string; codigo?: string; id: string }; estadisticas: { diasConAsistenciaRegistrada: number }; fechasRegistro: string[]; fechasSinRegistro?: string[] }) => ({
       cells: [
         <span className="font-bold text-gray-900" key="nombre">{item.clase.nombre}</span>,
         <span className="font-mono text-xs" key="codigo">{item.clase.codigo || '-'}</span>,
         <span className="font-bold text-blue-600" key="dias">{item.estadisticas.diasConAsistenciaRegistrada}</span>,
-        <div className="flex flex-wrap gap-1 max-w-[280px]" key="fechas">
-          {item.fechasRegistro.length > 0 ? (
-            item.fechasRegistro.map((f: string, i: number) => (
-              <span
-                key={i}
-                className="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-medium border shadow-xs bg-blue-50 text-blue-700 border-blue-200 cursor-default"
-              >
-                {formatFechaEs(f)}
-              </span>
-            ))
-          ) : (
-            <span className="text-gray-400 text-xs">-</span>
-          )}
-        </div>,
+        renderFechasTutor(item.fechasSinRegistro || [], 'bg-red-50 text-red-700 border-red-200'),
+        renderFechasTutor(item.fechasRegistro || [], 'bg-green-50 text-green-700 border-green-200'),
       ],
       key: item.clase.id,
     }));
