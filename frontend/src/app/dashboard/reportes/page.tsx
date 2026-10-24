@@ -9,6 +9,7 @@ import ReportesHeader from '@/components/reportes/ReportesHeader';
 import ReportesFilters from '@/components/reportes/ReportesFilters';
 import ReportePreview from '@/components/reportes/ReportePreview';
 import TabSelector from '@/components/reportes/TabSelector';
+import ReporteListasPendientes from '@/components/reportes/ReporteListasPendientes';
 import {
   useReporteClase,
   useReporteBeneficiario,
@@ -62,7 +63,7 @@ export default function ReportesPage() {
   const qAusen = useReporteAusencias(fGlobal);
 
   const data = useMemo(() => {
-    const map: Record<TipoReportePrincipal, unknown> = { clase: qClase.data, beneficiario: qBene.data, tutor: qTutor.data, global: qGlobal.data, ausencias: qAusen.data };
+    const map: Record<TipoReportePrincipal, unknown> = { clase: qClase.data, beneficiario: qBene.data, tutor: qTutor.data, global: qGlobal.data, ausencias: qAusen.data, listasPendientes: null };
     return map[tab] ?? null;
   }, [tab, qClase.data, qBene.data, qTutor.data, qGlobal.data, qAusen.data]);
 
@@ -137,7 +138,7 @@ export default function ReportesPage() {
           {error && <Alert variant="error" onClose={() => setError('')}>{error}</Alert>}
           {success && <Alert variant="success" onClose={() => setSuccess('')}>{success}</Alert>}
           <TabSelector activeTab={tab} onSelect={switchTab} />
-          {tab === 'global' || tab === 'ausencias' ? (
+          {tab === 'listasPendientes' ? <ReporteListasPendientes /> : tab === 'global' || tab === 'ausencias' ? (
             <ReportesFilters
               tipoPeriodo={periodo} tipoReporteGlobal={detalle} fechaDia={fDia} mesSeleccionado={fMes}
               anioSeleccionado={fAnio} fechaInicio={fIni} fechaFin={fFin} isLoading={loading} isGlobal

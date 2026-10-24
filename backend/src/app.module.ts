@@ -1,3 +1,4 @@
+import { EncuentroClub } from './modules/clubs/encuentro-club.entity';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -76,6 +77,7 @@ import { BonosModule } from './modules/bonos/bonos.module';
             AsistenciaSupervivencia,
             FotoAsistenciaSupervivencia,
             Club,
+            EncuentroClub,
             AsistenciaClub,
             FotoAsistenciaClub,
             MenuNutricion,

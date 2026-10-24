@@ -1,3 +1,4 @@
+import { EncuentroClub } from '../modules/clubs/encuentro-club.entity';
 import { DataSource, DataSourceOptions } from 'typeorm';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
@@ -57,6 +58,7 @@ const options: DataSourceOptions = {
     AsistenciaSupervivencia,
     FotoAsistenciaSupervivencia,
     Club,
+    EncuentroClub,
     AsistenciaClub,
     FotoAsistenciaClub,
     MenuNutricion,

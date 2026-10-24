@@ -1,6 +1,9 @@
 'use client';
 
 import { useState, useRef, useCallback, useMemo, useEffect } from 'react';
+import { format, parseISO } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { isAxiosError } from 'axios';
 import {
   Calendar,
   Check,
@@ -14,6 +17,8 @@ import {
   Users,
 } from 'lucide-react';
 import Button from '@/components/ui/Button';
+import Alert from '@/components/ui/Alert';
+import ClubMesSelector from '@/components/encuentros/MesEncuentrosSelector';
 import {
   Club,
   AsistenciaLocal,
@@ -24,33 +29,85 @@ import {
   useFotosClub,
   useSubirFotoClub,
   useEliminarFotoClub,
+  useEncuentrosClub,
 } from '@/lib/hooks/useClubs';
 
-interface ClubAsistenciasProps {
+interface ClubAsistenciaProps {
   clubId: string;
   club: Club;
   fechasConAsistencia: string[];
+  mes: string;
+  onCambiarMes: (mes: string) => void;
+  onConfigurarEncuentros: () => void;
+  puedeEditar: boolean;
 }
 
 export default function ClubAsistencias({
   clubId,
   club,
   fechasConAsistencia,
-}: ClubAsistenciasProps) {
-  const [fechaAsistencia, setFechaAsistencia] = useState(
-    new Date().toISOString().split('T')[0]
+  mes,
+  onCambiarMes,
+  onConfigurarEncuentros,
+  puedeEditar,
+}: ClubAsistenciaProps) {
+  const { data, isPending, isError, refetch } = useEncuentrosClub(clubId, mes);
+  const [seleccionada, setSeleccionada] = useState('');
+  const fechas = data?.fechas ?? [];
+  const hoy = format(new Date(), 'yyyy-MM-dd');
+  const fecha = fechas.includes(seleccionada) ? seleccionada : fechas.includes(hoy) ? hoy : fechas[0];
+
+  return (
+    <div className="space-y-4">
+      <section className="bg-white rounded-lg shadow p-4 sm:p-6 space-y-4">
+        <h2 className="text-lg font-semibold text-gray-900">Encuentros para pasar asistencia</h2>
+        <ClubMesSelector mes={mes} onChange={onCambiarMes} />
+        {isPending ? <p className="text-gray-500">Cargando encuentros…</p> : isError ? (
+          <Alert variant="error">No se pudieron cargar los encuentros. <button type="button" className="underline" onClick={() => refetch()}>Reintentar</button></Alert>
+        ) : fechas.length === 0 ? (
+          <div className="space-y-3">
+            <p className="text-gray-600">No hay encuentros configurados para este mes.</p>
+            {puedeEditar && <Button variant="outline" onClick={onConfigurarEncuentros}>Configurar encuentros</Button>}
+          </div>
+        ) : (
+          <div className="flex flex-wrap gap-3">
+            {fechas.map((dia) => (
+              <button type="button" key={dia} aria-pressed={fecha === dia} onClick={() => setSeleccionada(dia)}
+                className={`px-4 py-3 rounded-lg border-2 text-sm capitalize ${fecha === dia ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-gray-200 text-gray-700 hover:border-indigo-400'}`}>
+                {format(parseISO(dia), 'EEEE d', { locale: es })}
+                {fechasConAsistencia.includes(dia) && <span className="block text-xs mt-1">Asistencia registrada</span>}
+              </button>
+            ))}
+          </div>
+        )}
+      </section>
+      {!isPending && !isError && fecha && (
+        <RegistroEncuentro key={`${clubId}-${fecha}`} clubId={clubId}
+          club={club} fechasConAsistencia={fechasConAsistencia}
+          fechaAsistencia={fecha} puedeEditar={puedeEditar} />
+      )}
+    </div>
   );
+}
+
+function RegistroEncuentro({
+  clubId, club, fechasConAsistencia, fechaAsistencia, puedeEditar,
+}: Pick<ClubAsistenciaProps, 'clubId' | 'club' | 'fechasConAsistencia' | 'puedeEditar'> & { fechaAsistencia: string }) {
   const [asistenciasLocales, setAsistenciasLocales] = useState<AsistenciaLocal[]>([]);
   const [lightboxFoto, setLightboxFoto] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Attendance data query
   const {
     data: asistenciasData,
     isLoading: loadingAsistencia,
+    error: errorAsistencia,
   } = useAsistenciasClub(clubId, fechaAsistencia);
 
+  // Track which key we've initialized to avoid re-initializing on refetch
   const initializedKeyRef = useRef<string>('');
 
+  // Initialize local attendance state when navigating to a new date
   useEffect(() => {
     if (asistenciasData) {
       const currentKey = `${clubId}-${fechaAsistencia}`;
@@ -67,6 +124,7 @@ export default function ClubAsistencias({
     }
   }, [asistenciasData, clubId, fechaAsistencia]);
 
+  // Photos query
   const {
     data: fotosData,
     isLoading: loadingFoto,
@@ -77,6 +135,7 @@ export default function ClubAsistencias({
     return Array.isArray(fotosData) ? fotosData : [fotosData];
   }, [fotosData]);
 
+  // Mutations
   const registrarMutation = useRegistrarAsistenciaClub();
   const subirFotoMutation = useSubirFotoClub();
   const eliminarFotoMutation = useEliminarFotoClub();
@@ -101,6 +160,7 @@ export default function ClubAsistencias({
   );
 
   const handleGuardarAsistencia = async () => {
+    if (!puedeEditar || loadingAsistencia || errorAsistencia || !asistenciasData || asistenciasLocales.length !== asistenciasData.asistencias.length) return;
     try {
       await registrarMutation.mutateAsync({
         id: clubId,
@@ -123,6 +183,7 @@ export default function ClubAsistencias({
   }, []);
 
   const handleSubirFoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!puedeEditar) return;
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
@@ -171,36 +232,36 @@ export default function ClubAsistencias({
 
   const yaRegistrada = fechasConAsistencia.includes(fechaAsistencia);
 
+  // Count present/absent from local state
   const presentes = asistenciasLocales.filter((a) => a.presente).length;
   const ausentes = asistenciasLocales.filter((a) => !a.presente).length;
 
   return (
     <>
       <div className="bg-white rounded-lg shadow">
+        {/* Header con fecha y acciones */}
         <div className="p-6 border-b border-gray-200">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="flex items-center gap-4">
+            <div className="flex flex-wrap items-center gap-3">
               <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                 <Calendar className="w-5 h-5 text-indigo-600" />
                 Pasar Asistencia
               </h2>
-              <input
-                type="date"
-                value={fechaAsistencia}
-                onChange={(e) => setFechaAsistencia(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
+              <span className="text-sm text-gray-700 capitalize">
+                {format(parseISO(fechaAsistencia), "EEEE d 'de' MMMM", { locale: es })}
+              </span>
               {yaRegistrada && (
                 <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
                   Ya registrada
                 </span>
               )}
             </div>
-            <div className="flex items-center gap-2">
+            {puedeEditar && <div className="flex flex-wrap items-center gap-2">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => marcarTodos(true)}
+                disabled={loadingAsistencia || !!errorAsistencia || !asistenciasData || registrarMutation.isPending}
                 className="flex items-center gap-1"
               >
                 <Check className="w-4 h-4" />
@@ -210,6 +271,7 @@ export default function ClubAsistencias({
                 variant="outline"
                 size="sm"
                 onClick={() => marcarTodos(false)}
+                disabled={loadingAsistencia || !!errorAsistencia || !asistenciasData || registrarMutation.isPending}
                 className="flex items-center gap-1"
               >
                 <X className="w-4 h-4" />
@@ -218,15 +280,21 @@ export default function ClubAsistencias({
               <Button
                 onClick={handleGuardarAsistencia}
                 isLoading={registrarMutation.isPending}
+                disabled={loadingAsistencia || !!errorAsistencia || !asistenciasData || asistenciasLocales.length === 0 || asistenciasLocales.length !== asistenciasData.asistencias.length}
                 className="flex items-center gap-1"
               >
                 <Save className="w-4 h-4" />
                 Guardar
               </Button>
-            </div>
+            </div>}
           </div>
         </div>
 
+        {registrarMutation.isSuccess && <Alert variant="success" className="m-4">Asistencia guardada.</Alert>}
+        {registrarMutation.isError && <Alert variant="error" className="m-4">{isAxiosError<{ message?: string }>(registrarMutation.error) ? registrarMutation.error.response?.data.message || 'No se pudo guardar la asistencia.' : 'No se pudo guardar la asistencia.'}</Alert>}
+        {errorAsistencia && <Alert variant="error" className="m-4">No se pudo cargar la asistencia. Inténtalo nuevamente.</Alert>}
+
+        {/* Fotos del día — galería multi-foto */}
         <div className="border-b border-gray-200">
           <div className="flex items-center justify-between px-4 py-3">
             <h3 className="text-sm font-medium text-gray-700 flex items-center gap-2">
@@ -248,7 +316,7 @@ export default function ClubAsistencias({
             />
             <button
               onClick={() => fileInputRef.current?.click()}
-              disabled={subirFotoMutation.isPending || loadingFoto}
+              disabled={!puedeEditar || subirFotoMutation.isPending || loadingFoto}
               className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50"
             >
               {subirFotoMutation.isPending ? (
@@ -297,6 +365,7 @@ export default function ClubAsistencias({
                         <ZoomIn className="w-3.5 h-3.5 text-gray-700" />
                       </button>
                       <button
+                        disabled={!puedeEditar || eliminarFotoMutation.isPending}
                         className="opacity-0 group-hover:opacity-100 p-1.5 bg-red-500/90 rounded-full shadow hover:bg-red-600 transition-all scale-90 group-hover:scale-100"
                         onClick={(e) => {
                           e.stopPropagation();
@@ -326,6 +395,7 @@ export default function ClubAsistencias({
           )}
         </div>
 
+        {/* Estadísticas rápidas */}
         {asistenciasData && (
           <div className="px-6 py-3 bg-gray-50 border-b flex items-center gap-6 text-sm">
             <span className="text-gray-600">
@@ -340,6 +410,7 @@ export default function ClubAsistencias({
           </div>
         )}
 
+        {/* Lista de asistencia */}
         {loadingAsistencia ? (
           <div className="flex items-center justify-center py-12">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
@@ -380,8 +451,10 @@ export default function ClubAsistencias({
                       </div>
                     </div>
 
+                    {/* Botones de asistencia */}
                     <div className="flex items-center gap-2">
                       <button
+                        disabled={!puedeEditar || registrarMutation.isPending}
                         onClick={() =>
                           handleAsistenciaChange(asistencia.beneficiario.id, true)
                         }
@@ -395,6 +468,7 @@ export default function ClubAsistencias({
                         <Check className="w-5 h-5" />
                       </button>
                       <button
+                        disabled={!puedeEditar || registrarMutation.isPending}
                         onClick={() =>
                           handleAsistenciaChange(asistencia.beneficiario.id, false)
                         }
@@ -409,9 +483,11 @@ export default function ClubAsistencias({
                       </button>
                     </div>
 
+                    {/* Campo de observaciones */}
                     <div className="hidden sm:block w-48">
                       <input
                         type="text"
+                        disabled={!puedeEditar || registrarMutation.isPending}
                         placeholder="Observaciones..."
                         value={local?.observaciones || ''}
                         onChange={(e) =>
@@ -431,6 +507,7 @@ export default function ClubAsistencias({
         )}
       </div>
 
+      {/* Lightbox */}
       {lightboxFoto && (
         <div
           className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"

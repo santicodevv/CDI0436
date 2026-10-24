@@ -3,6 +3,7 @@ import { clubsApi } from '@/lib/api/clubs';
 
 export const clubsKeys = {
   all: ['clubes'] as const,
+  encuentros:(id:string,mes:string)=>[...clubsKeys.all,'encuentros',id,mes] as const,
   lists: () => [...clubsKeys.all, 'list'] as const,
   list: (filters?: Record<string, string>) => [...clubsKeys.lists(), { filters }] as const,
   details: () => [...clubsKeys.all, 'detail'] as const,
@@ -137,6 +138,7 @@ export function useSubirFotoClub() {
       queryClient.invalidateQueries({
         queryKey: [...clubsKeys.all, 'fotos', variables.clubId, variables.fecha],
       });
+      queryClient.invalidateQueries({queryKey:[...clubsKeys.all,'encuentros']});
     },
   });
 }
@@ -148,6 +150,7 @@ export function useEliminarFotoClub() {
       clubsApi.eliminarFoto(clubId, fotoId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [...clubsKeys.all, 'fotos'] });
+      queryClient.invalidateQueries({ queryKey: [...clubsKeys.all, 'encuentros'] });
     },
   });
 }
@@ -172,6 +175,25 @@ export function useRemoverBeneficiarioClub() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: clubsKeys.detail(variables.id) });
       queryClient.invalidateQueries({ queryKey: clubsKeys.lists() });
+    },
+  });
+}
+
+export function useEncuentrosClub(id: string, mes: string) {
+  return useQuery({
+    queryKey: clubsKeys.encuentros(id, mes),
+    queryFn: () => clubsApi.getEncuentros(id, mes),
+    enabled: !!id && !!mes,
+  });
+}
+
+export function useConfigurarEncuentrosClub() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, mes, fechas }: { id: string; mes: string; fechas: string[] }) =>
+      clubsApi.configurarEncuentros(id, mes, fechas),
+    onSuccess: (data, { id, mes }) => {
+      queryClient.setQueryData(clubsKeys.encuentros(id, mes), data);
     },
   });
 }

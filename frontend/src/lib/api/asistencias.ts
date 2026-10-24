@@ -1,4 +1,5 @@
 import apiClient from './client';
+import type { ReportePaseListaTutor } from '../types';
 import {
   Asistencia,
   EstadoAsistencia,
@@ -10,6 +11,10 @@ import {
 } from '../types';
 
 export const asistenciasApi = {
+  getPaseListaTutor: async (tutorId: string, fechaInicio: string, fechaFin: string): Promise<ReportePaseListaTutor> => {
+    const response = await apiClient.get(`/asistencias/reporte/tutor/${tutorId}/pendientes`, { params: { fechaInicio, fechaFin } });
+    return response.data;
+  },
   getAll: async (filters?: Record<string, string>): Promise<Asistencia[]> => {
     const params = new URLSearchParams();
     if (filters) {

@@ -1,3 +1,4 @@
+import type { EncuentrosResponse } from '../types';
 import apiClient from './client';
 import {
   Club,
@@ -17,6 +18,17 @@ interface RegistrarAsistenciaData {
 }
 
 export const clubsApi = {
+  getEncuentros: async (id: string, mes: string): Promise<EncuentrosResponse> => {
+    const response = await apiClient.get(`/clubes/${id}/encuentros`, { params: { mes } });
+    return response.data;
+  },
+
+  configurarEncuentros: async (id: string, mes: string, fechas: string[]): Promise<EncuentrosResponse> => {
+    const response = await apiClient.patch(`/clubes/${id}/encuentros`, { mes, fechas });
+    return response.data;
+  },
+
+
   getAll: async (filters?: Record<string, string>): Promise<Club[]> => {
     const params = new URLSearchParams();
     if (filters) {
