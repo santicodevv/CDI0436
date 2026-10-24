@@ -605,7 +605,7 @@ export interface NotaFormValues {
 // ── Reportes types ──────────────────────────────────────────────────────────
 export type TipoPeriodo = 'dia' | 'mes' | 'anio' | 'rango' | 'todo';
 export type TipoReporteGlobal = 'estadistico' | 'detallado';
-export type TipoReportePrincipal = 'clase' | 'beneficiario' | 'tutor' | 'global' | 'ausencias';
+export type TipoReportePrincipal = 'clase' | 'beneficiario' | 'tutor' | 'global' | 'ausencias' | 'listasPendientes';
 
 export interface ReporteFiltrosClase {
   id: string;
@@ -721,4 +721,32 @@ export interface EstadisticasGenerales {
   ausentes?: number;
   porcentajeAsistencia?: string;
   [key: string]: unknown;
+}
+
+export interface EncuentrosResponse { fechas: string[]; fechasBloqueadas: string[]; }
+
+export type EstadoPaseLista = 'sin_registro' | 'parcial' | 'registrada' | 'pendiente_hoy' | 'programada';
+export interface SesionPaseLista {
+  fecha: string;
+  tipo: 'clase' | 'club' | 'supervivencia';
+  actividadId: string;
+  actividad: string;
+  codigo: string | null;
+  inscritos: number;
+  registrados: number;
+  estado: EstadoPaseLista;
+}
+export interface ReportePaseListaTutor {
+  tutor: { id: string; nombre: string };
+  periodo: { fechaInicio: string; fechaFin: string; hoy: string };
+  estadisticas: {
+    sesionesProgramadas: number;
+    sesionesSinRegistro: number;
+    diasSinRegistro: number;
+    sesionesRegistradas: number;
+    sesionesParciales: number;
+    pendientesHoy: number;
+  };
+  sesiones: SesionPaseLista[];
+  nota: string;
 }

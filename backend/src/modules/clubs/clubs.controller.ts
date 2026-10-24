@@ -1,4 +1,8 @@
 import {
+  ConfigurarEncuentrosDto,
+  MesEncuentrosDto,
+} from '../../common/dto/configurar-encuentros.dto';
+import {
   Controller,
   Get,
   Post,
@@ -98,6 +102,23 @@ export class ClubsController {
   @RequierePermiso('clubs:editar')
   softDelete(@Param('id', ParseUUIDPipe) id: string) {
     return this.clubsService.softDelete(id);
+  }
+
+  @Get(':id/encuentros')
+  @RequierePermiso('clubs:ver')
+  getEncuentros(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query() query: MesEncuentrosDto,
+  ) {
+    return this.clubsService.getEncuentros(id, query.mes);
+  }
+  @Patch(':id/encuentros')
+  @RequierePermiso('clubs:editar')
+  configurarEncuentros(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: ConfigurarEncuentrosDto,
+  ) {
+    return this.clubsService.configurarEncuentros(id, dto);
   }
 
   @Post(':id/asistencias')

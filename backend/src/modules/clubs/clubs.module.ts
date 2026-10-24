@@ -1,3 +1,4 @@
+import { EncuentroClub } from './encuentro-club.entity';
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ClubsService } from './clubs.service';
@@ -12,6 +13,7 @@ import { Tutor } from '../tutores/tutor.entity';
   imports: [
     TypeOrmModule.forFeature([
       Club,
+      EncuentroClub,
       AsistenciaClub,
       FotoAsistenciaClub,
       Beneficiario,

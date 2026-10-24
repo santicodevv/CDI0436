@@ -25,11 +25,25 @@ import { JustificarMasivoDto } from './dto/justificar-masivo.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PermisosGuard } from '../auth/guards/permisos.guard';
 import { RequierePermiso } from '../auth/decorators/permisos.decorator';
+import { PaseListaTutorService } from './pase-lista-tutor.service';
+import { ReportePaseListaDto } from './dto/reporte-pase-lista.dto';
 
 @Controller('asistencias')
 @UseGuards(JwtAuthGuard, PermisosGuard)
 export class AsistenciasController {
-  constructor(private readonly asistenciasService: AsistenciasService) {}
+  constructor(
+    private readonly asistenciasService: AsistenciasService,
+    private readonly paseListaTutorService: PaseListaTutorService,
+  ) {}
+
+  @Get('reporte/tutor/:tutorId/pendientes')
+  @RequierePermiso('reportes:ver')
+  getPaseListaTutor(
+    @Param('tutorId', ParseUUIDPipe) tutorId: string,
+    @Query() filtros: ReportePaseListaDto,
+  ) {
+    return this.paseListaTutorService.generar(tutorId, filtros);
+  }
 
   @Post()
   @RequierePermiso('asistencias:crear')

@@ -1,3 +1,6 @@
+import { GestorEncuentros } from '../../common/services/gestor-encuentros';
+import { ConfigurarEncuentrosDto } from '../../common/dto/configurar-encuentros.dto';
+import { EncuentroClub } from './encuentro-club.entity';
 import {
   Injectable,
   NotFoundException,
@@ -281,60 +284,83 @@ export class ClubsService {
     };
   }
 
+  private get encuentros() {
+    return new GestorEncuentros(this.clubesRepository.manager, {
+      curso: Club,
+      encuentro: EncuentroClub,
+      asistencia: AsistenciaClub,
+      foto: FotoAsistenciaClub,
+      relacion: 'club',
+    });
+  }
+  getEncuentros(id: string, mes: string) {
+    return this.encuentros.getEncuentros(id, mes);
+  }
+  configurarEncuentros(id: string, dto: ConfigurarEncuentrosDto) {
+    return this.encuentros.configurarEncuentros(id, dto);
+  }
+
   async registrarAsistencia(
     id: string,
     registrarAsistenciaDto: RegistrarAsistenciaClubDto,
   ): Promise<AsistenciaClub[]> {
-    const club = await this.clubesRepository.findOne({
-      where: { id },
-      relations: ['beneficiarios', 'tutor'],
-    });
-
-    if (!club) {
-      throw new NotFoundException(`Club con ID ${id} no encontrado`);
-    }
-
-    const fecha = new Date(registrarAsistenciaDto.fecha);
-    const asistenciasGuardadas: AsistenciaClub[] = [];
-
-    for (const asistenciaDto of registrarAsistenciaDto.asistencias) {
-      const beneficiarioInscrito = club.beneficiarios?.find(
-        (b) => b.id === asistenciaDto.beneficiario_id,
+    return this.encuentros.conCursoBloqueado(id, async (manager) => {
+      await this.encuentros.validarEncuentro(
+        manager,
+        id,
+        registrarAsistenciaDto.fecha,
       );
+      const club = await manager.getRepository(Club).findOne({
+        where: { id },
+        relations: ['beneficiarios', 'tutor'],
+      });
 
-      if (!beneficiarioInscrito) {
-        throw new BadRequestException(
-          `El beneficiario con ID ${asistenciaDto.beneficiario_id} no está inscrito en este club`,
+      if (!club) {
+        throw new NotFoundException(`Club con ID ${id} no encontrado`);
+      }
+
+      const fecha = new Date(registrarAsistenciaDto.fecha);
+      const asistenciasGuardadas: AsistenciaClub[] = [];
+
+      for (const asistenciaDto of registrarAsistenciaDto.asistencias) {
+        const beneficiarioInscrito = club.beneficiarios?.find(
+          (b) => b.id === asistenciaDto.beneficiario_id,
+        );
+
+        if (!beneficiarioInscrito) {
+          throw new BadRequestException(
+            `El beneficiario con ID ${asistenciaDto.beneficiario_id} no está inscrito en este club`,
+          );
+        }
+
+        let asistencia = await manager.getRepository(AsistenciaClub).findOne({
+          where: {
+            club: { id },
+            beneficiario: { id: asistenciaDto.beneficiario_id },
+            fecha: fecha,
+          },
+        });
+
+        if (asistencia) {
+          asistencia.presente = asistenciaDto.presente;
+          asistencia.observaciones = asistenciaDto.observaciones || undefined;
+        } else {
+          asistencia = manager.getRepository(AsistenciaClub).create({
+            club: { id } as Club,
+            beneficiario: { id: asistenciaDto.beneficiario_id } as Beneficiario,
+            fecha: fecha,
+            presente: asistenciaDto.presente,
+            observaciones: asistenciaDto.observaciones || undefined,
+          });
+        }
+
+        asistenciasGuardadas.push(
+          await manager.getRepository(AsistenciaClub).save(asistencia),
         );
       }
 
-      let asistencia = await this.asistenciasRepository.findOne({
-        where: {
-          club: { id },
-          beneficiario: { id: asistenciaDto.beneficiario_id },
-          fecha: fecha,
-        },
-      });
-
-      if (asistencia) {
-        asistencia.presente = asistenciaDto.presente;
-        asistencia.observaciones = asistenciaDto.observaciones || undefined;
-      } else {
-        asistencia = this.asistenciasRepository.create({
-          club: { id } as Club,
-          beneficiario: { id: asistenciaDto.beneficiario_id } as Beneficiario,
-          fecha: fecha,
-          presente: asistenciaDto.presente,
-          observaciones: asistenciaDto.observaciones || undefined,
-        });
-      }
-
-      asistenciasGuardadas.push(
-        await this.asistenciasRepository.save(asistencia),
-      );
-    }
-
-    return asistenciasGuardadas;
+      return asistenciasGuardadas;
+    });
   }
 
   async getAsistenciasPorFecha(id: string, fecha: string): Promise<any> {
@@ -458,10 +484,10 @@ export class ClubsService {
 
     const result = await this.asistenciasRepository
       .createQueryBuilder('asistencia')
-      .select('DISTINCT DATE(asistencia.fecha)', 'fecha')
+      .select('DISTINCT CAST(asistencia.fecha AS text)', 'fecha')
       .where('asistencia.club_id = :id', { id })
       .orderBy('fecha', 'DESC')
-      .getRawMany();
+      .getRawMany<{ fecha: string }>();
 
     return result.map((r) => r.fecha);
   }
@@ -471,23 +497,26 @@ export class ClubsService {
     fecha: string,
     imagenBase64: string,
   ): Promise<FotoAsistenciaClub> {
-    const club = await this.clubesRepository.findOne({
-      where: { id: clubId },
+    return this.encuentros.conCursoBloqueado(clubId, async (manager) => {
+      await this.encuentros.validarEncuentro(manager, clubId, fecha);
+      const club = await manager.getRepository(Club).findOne({
+        where: { id: clubId },
+      });
+
+      if (!club) {
+        throw new NotFoundException(`Club con ID ${clubId} no encontrado`);
+      }
+
+      const fechaDate = new Date(`${fecha}T12:00:00`);
+
+      const foto = manager.getRepository(FotoAsistenciaClub).create({
+        club,
+        fecha: fechaDate,
+        imagen_url: imagenBase64,
+      });
+
+      return await manager.getRepository(FotoAsistenciaClub).save(foto);
     });
-
-    if (!club) {
-      throw new NotFoundException(`Club con ID ${clubId} no encontrado`);
-    }
-
-    const fechaDate = new Date(`${fecha}T12:00:00`);
-
-    const foto = this.fotosRepository.create({
-      club,
-      fecha: fechaDate,
-      imagen_url: imagenBase64,
-    });
-
-    return await this.fotosRepository.save(foto);
   }
 
   async getFotoAsistencia(

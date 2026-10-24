@@ -7,6 +7,7 @@ import { FotoAsistencia } from './foto-asistencia.entity';
 import { Clase } from '../clases/clase.entity';
 import { Beneficiario } from '../beneficiarios/beneficiario.entity';
 import { Tutor } from '../tutores/tutor.entity';
+import { PaseListaTutorService } from './pase-lista-tutor.service';
 
 @Module({
   imports: [
@@ -19,7 +20,7 @@ import { Tutor } from '../tutores/tutor.entity';
     ]),
   ],
   controllers: [AsistenciasController],
-  providers: [AsistenciasService],
+  providers: [AsistenciasService, PaseListaTutorService],
   exports: [AsistenciasService, TypeOrmModule],
 })
 export class AsistenciasModule {}
