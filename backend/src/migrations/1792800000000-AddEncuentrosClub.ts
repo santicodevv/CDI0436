@@ -5,30 +5,30 @@ export class AddEncuentrosClub1792800000000 implements MigrationInterface {
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`
-      CREATE TABLE "encuentros_club" (
+      CREATE TABLE "public"."encuentros_club" (
         "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
         "club_id" uuid NOT NULL,
         "fecha" date NOT NULL,
         CONSTRAINT "PK_encuentros_club" PRIMARY KEY ("id"),
         CONSTRAINT "FK_encuentros_club_curso" FOREIGN KEY ("club_id")
-          REFERENCES "clubes"("id") ON DELETE CASCADE
+          REFERENCES "public"."clubes"("id") ON DELETE CASCADE
       )
     `);
     await queryRunner.query(`
       CREATE UNIQUE INDEX "IDX_ENCUENTROS_CLUB_CURSO_FECHA"
-      ON "encuentros_club" ("club_id", "fecha")
+      ON "public"."encuentros_club" ("club_id", "fecha")
     `);
     // Mantener accesibles los encuentros que ya tienen asistencia o fotos.
     await queryRunner.query(`
-      INSERT INTO "encuentros_club" ("club_id", "fecha")
-      SELECT "club_id", "fecha" FROM "asistencias_club" WHERE "club_id" IS NOT NULL
+      INSERT INTO "public"."encuentros_club" ("club_id", "fecha")
+      SELECT "club_id", "fecha" FROM "public"."asistencias_club" WHERE "club_id" IS NOT NULL
       UNION
-      SELECT "club_id", "fecha" FROM "fotos_asistencia_club" WHERE "club_id" IS NOT NULL
+      SELECT "club_id", "fecha" FROM "public"."fotos_asistencia_club" WHERE "club_id" IS NOT NULL
       ON CONFLICT ("club_id", "fecha") DO NOTHING
     `);
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query('DROP TABLE "encuentros_club"');
+    await queryRunner.query('DROP TABLE "public"."encuentros_club"');
   }
 }

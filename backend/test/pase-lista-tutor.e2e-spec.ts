@@ -18,8 +18,8 @@ const { Client } = pg as unknown as {
   }) => PgTestClient;
 };
 
-// Usar una conexión dedicada. Todas las tablas de prueba son TEMP y se descartan
-// al cerrar la conexión; las tablas reales nunca se alteran.
+// Fijar la conexión dentro de una transacción y revertirla al terminar: cerrar
+// un cliente de PgBouncer no necesariamente descarta sus tablas temporales.
 const describeDatabase = process.env.TEST_DATABASE_URL
   ? describe
   : describe.skip;
@@ -45,6 +45,7 @@ describeDatabase(
 
     beforeAll(async () => {
       await client.connect();
+      await client.query('BEGIN');
       await client.query(`
       CREATE TEMP TABLE clases (id text PRIMARY KEY, tutor_id text, nombre text, codigo text, activo boolean, creado_en timestamp);
       CREATE TEMP TABLE clubes (LIKE clases INCLUDING ALL);
@@ -83,7 +84,11 @@ describeDatabase(
     `);
     }, 20000);
     afterAll(async () => {
-      await client.end();
+      try {
+        await client.query('ROLLBACK');
+      } finally {
+        await client.end();
+      }
     });
 
     it('compara horarios, fechas configuradas y registros sin duplicar días ni mezclar tutores', async () => {
@@ -150,12 +155,21 @@ describeDatabase(
             return client.query(
               sql
                 .replace('CREATE TABLE', 'CREATE TEMP TABLE')
-                .replaceAll('"encuentros_club"', '"verificacion_encuentros"')
+                .replaceAll(
+                  '"public"."encuentros_club"',
+                  '"verificacion_encuentros"',
+                )
+                .replaceAll('"public".', '"pg_temp".')
                 .replace('"club_id" uuid', '"club_id" text'),
             );
           }
           return client.query(
-            sql.replaceAll('"encuentros_club"', '"verificacion_encuentros"'),
+            sql
+              .replaceAll(
+                '"public"."encuentros_club"',
+                '"verificacion_encuentros"',
+              )
+              .replaceAll('"public".', '"pg_temp".'),
           );
         },
       } as unknown as QueryRunner);
