@@ -55,6 +55,14 @@ jobs:
               -H 'Accept: application/json' -H 'Content-Type: application/json' "$@"
           }
 
+          # Con credenciales inválidas Jira responde como anónimo (404 en los tickets),
+          # así que se validan antes para dar un error claro.
+          if ! me=$(jira "$JIRA_BASE_URL/rest/api/3/myself" 2>/dev/null) || [ "$(jq -r '.accountId // empty' <<< "$me")" = "" ]; then
+            echo "::error::Credenciales de Jira inválidas: revisá que JIRA_USER_EMAIL sea el email de la cuenta Atlassian dueña de JIRA_API_TOKEN."
+            exit 1
+          fi
+          echo "Autenticado en Jira como $(jq -r '.displayName' <<< "$me")"
+
           for key in $keys; do
             transitions=$(jira "$JIRA_BASE_URL/rest/api/3/issue/$key/transitions") || {
               echo "::warning::No se pudo leer $key (¿existe?)."
