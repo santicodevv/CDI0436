@@ -1,3 +1,9 @@
+## Ticket de Jira
+
+<!-- Obligatorio. Ej: CDI-12. El CI falla si la rama o el título no incluyen la clave. -->
+
+CDI-
+
 ## Descripción
 
 <!-- Explica qué hace este PR y por qué es necesario. -->
@@ -18,7 +24,8 @@
 - [ ] No incluí secrets ni archivos `.env*` (solo `.env.example`)
 - [ ] No incluí scripts de debug/scratch (prefijo `_`)
 - [ ] Agregué o actualicé tests si corresponde
-- [ ] La rama sigue el patrón `feature/...`, `fix/...` o `refactor/...`
+- [ ] La rama sigue el patrón `feature/CDI-<n>-...`, `fix/CDI-<n>-...` o `refactor/CDI-<n>-...`
+- [ ] El ticket de Jira está en "En revisión" y cumple sus criterios de aceptación
 
 ## Cómo probar
 
@@ -26,6 +33,6 @@
 
 ## Screenshots (opcional)
 
-## Issues relacionados
+## Tickets relacionados
 
-<!-- Closes #123 -->
+<!-- Otros tickets afectados, ej: CDI-15, CDI-18 -->
