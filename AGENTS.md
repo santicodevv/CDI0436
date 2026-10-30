@@ -35,7 +35,7 @@ Backend tests use Jest, Nest testing utilities, and Supertest. Run `npm test -- 
 
 ## Commit & Pull Request Guidelines
 
-Follow `CONTRIBUTING.md` and existing Conventional Commits: `feat(merito): ...`, `fix: ...`, `docs: ...`. Use `feature/`, `fix/`, `refactor/`, or `docs/` branches. Submit changes through PRs with at least one approval and passing CI. Complete `.github/PULL_REQUEST_TEMPLATE.md`: explain the change, provide verification steps, link relevant issues, and optionally include screenshots.
+Follow `CONTRIBUTING.md` and existing Conventional Commits: `feat(merito): ...`, `fix: ...`, `docs: ...`. Use `feature/`, `fix/`, `refactor/`, or `docs/` branches that include the Jira key (e.g. `feature/CDI-12-reporte-pdf`); put the key in commits and PR titles too. Scrum process: `docs/SCRUM.md`. Submit changes through PRs with at least one approval and passing CI. Complete `.github/PULL_REQUEST_TEMPLATE.md`: explain the change, provide verification steps, link relevant issues, and optionally include screenshots.
 
 ## Security & Configuration
 

@@ -1,0 +1,26 @@
+name: Jira
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, edited, synchronize, reopened]
+
+jobs:
+  jira-key:
+    name: Ticket de Jira
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verificar clave CDI-<n> en rama o título
+        env:
+          BRANCH: ${{ github.head_ref }}
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          set -euo pipefail
+          if printf '%s\n%s\n' "$BRANCH" "$TITLE" | grep -qE '\bCDI-[0-9]+\b'; then
+            key=$(printf '%s\n%s\n' "$BRANCH" "$TITLE" | grep -oE '\bCDI-[0-9]+\b' | head -1)
+            echo "OK - PR vinculado a $key"
+            exit 0
+          fi
+          echo "::error::El PR no referencia un ticket de Jira."
+          echo "Usá una rama como feature/CDI-12-reporte-pdf o un título como 'feat(reportes): CDI-12 exportar PDF'."
+          exit 1

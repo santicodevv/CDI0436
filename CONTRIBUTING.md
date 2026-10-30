@@ -11,33 +11,39 @@ Gracias por contribuir a **CDI0436**. Este es un proyecto colaborativo: el códi
 
 ## Flujo de trabajo
 
+Todo cambio nace de un ticket de Jira (proyecto **CDI**). Trabajamos en Scrum con sprints de 2 semanas; ver [docs/SCRUM.md](docs/SCRUM.md).
+
 ```bash
+# 0. Tomá un ticket del sprint en Jira y movelo a "En curso" (ej. CDI-12)
+
 # 1. Partí de main actualizado
 git checkout main
 git pull origin main
 
-# 2. Creá una rama con prefijo semántico
-git checkout -b feature/nombre-descriptivo
-#   o: fix/arreglo, refactor/cambio, docs/cambio
+# 2. Creá una rama con prefijo semántico + clave del ticket
+git checkout -b feature/CDI-12-nombre-descriptivo
+#   o: fix/CDI-13-arreglo, refactor/CDI-14-cambio, docs/CDI-15-cambio
 
 # 3. Hacé commits pequeños y descriptivos
 git add <archivos>
 git diff --cached  # Revisá qué cambios van a incluirse
-git commit -m "feat: agregar registro masivo de asistencias"
+git commit -m "feat(asistencias): CDI-12 agregar registro masivo"
 
 # 4. Subí tu rama y abrí el PR
-git push origin feature/nombre-descriptivo
-gh pr create   # o desde la web de GitHub
+git push origin feature/CDI-12-nombre-descriptivo
+gh pr create   # o desde la web de GitHub; movelo a "En revisión" en Jira
 ```
+
+La clave `CDI-<n>` en rama, commits y título del PR hace que Jira muestre automáticamente ramas, commits, PRs y builds dentro del ticket. El check **Jira / Ticket de Jira** del CI falla si el PR no la incluye.
 
 ## Convenciones de ramas
 
-| Prefijo     | Uso                                   | Ejemplo               |
-| ----------- | ------------------------------------- | --------------------- |
-| `feature/`  | Nueva funcionalidad                   | `feature/reporte-pdf` |
-| `fix/`      | Corrección de bug                     | `fix/join-columnas`   |
-| `refactor/` | Mejora de código sin cambio funcional | `refactor/services`   |
-| `docs/`     | Documentación                         | `docs/readme-deploy`  |
+| Prefijo     | Uso                                   | Ejemplo                      |
+| ----------- | ------------------------------------- | ---------------------------- |
+| `feature/`  | Nueva funcionalidad (Historia)        | `feature/CDI-12-reporte-pdf` |
+| `fix/`      | Corrección de bug (Error)             | `fix/CDI-13-join-columnas`   |
+| `refactor/` | Mejora de código sin cambio funcional | `refactor/CDI-14-services`   |
+| `docs/`     | Documentación                         | `docs/CDI-15-readme-deploy`  |
 
 ## Convenciones de commits
 
@@ -49,6 +55,8 @@ Usá formato semántico (Conventional Commits):
 - `chore: ...` tareas de mantenimiento
 - `docs: ...` documentación
 - `test: ...` tests
+
+Incluí el módulo como scope y la clave del ticket: `fix(reportes): CDI-21 separar fechas por tutor`.
 
 ## Estándares de código
 
@@ -77,3 +85,5 @@ Un PR está listo para mergear cuando:
 - [ ] Tiene una descripción clara en el template de PR
 - [ ] No contiene secrets ni archivos basura
 - [ ] Los cambios están probados localmente
+- [ ] El PR referencia su ticket `CDI-<n>` y se cumplen sus criterios de aceptación
+- [ ] Tras el merge, el ticket pasa a "Listo" en Jira
