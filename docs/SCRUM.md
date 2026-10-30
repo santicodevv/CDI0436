@@ -73,11 +73,12 @@ Ver [CONTRIBUTING.md](../CONTRIBUTING.md#definición-de-listo-definition-of-done
 
 ## Integración Jira ↔ GitHub
 
-- Instalar la app **GitHub for Jira** (Atlassian Marketplace) y conectar la organización/cuenta de GitHub. Requiere permisos de admin en Jira y GitHub.
-- Con la clave `CDI-<n>` en ramas, commits y PRs, el ticket muestra el panel *Development* con ramas, commits, PRs y estado de los builds.
-- **Smart commits** (opcional): `git commit -m "fix(reportes): CDI-21 #comment corrige filtro #time 1h"`.
-- Automatizaciones recomendadas en Jira (*Configuración del proyecto → Automatización*):
-  - Rama creada → mover ticket a **En curso**.
-  - PR abierto → mover a **En revisión**.
-  - PR mergeado → mover a **Listo**.
-- El workflow `.github/workflows/jira.yml` falla si el PR no incluye una clave `CDI-<n>`.
+La integración se hace con GitHub Actions y la API de Jira (sin la app GitHub for Jira):
+
+- `.github/workflows/jira.yml` falla si el PR no incluye una clave `CDI-<n>` en la rama o el título.
+- `.github/workflows/jira-transiciones.yml` mueve los tickets referenciados:
+  - PR abierto, reabierto o listo para revisión → **En revisión** (o **En curso** si la columna no existe).
+  - PR mergeado → **Listo**, con un comentario que enlaza el PR.
+- Mover a **En curso** al empezar a trabajar sigue siendo manual (al tomar el ticket).
+- Secretos del repo requeridos: `JIRA_USER_EMAIL` (email de la cuenta Atlassian) y `JIRA_API_TOKEN` ([crear token](https://id.atlassian.com/manage-profile/security/api-tokens)). Configurarlos con `gh secret set <NOMBRE> --repo santicodevv/CDI0436`; nunca pegarlos en chats, issues ni commits. Si faltan, el workflow avisa y no hace nada.
+- Para trazabilidad, buscá en Jira por clave o en GitHub con `gh pr list --search "CDI-12"`.
