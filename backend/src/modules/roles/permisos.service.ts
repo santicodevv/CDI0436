@@ -342,6 +342,24 @@ export const PERMISOS_SISTEMA = [
     descripcion: 'Permite eliminar ayudas económicas registradas',
   },
 
+  // Tickets (solicitudes de cambios y reportes de problemas)
+  {
+    codigo: 'tickets:crear',
+    nombre: 'Crear tickets',
+    modulo: 'tickets',
+    accion: 'crear',
+    descripcion:
+      'Permite enviar solicitudes de cambios o problemas y ver las propias',
+  },
+  {
+    codigo: 'tickets:gestionar',
+    nombre: 'Gestionar tickets',
+    modulo: 'tickets',
+    accion: 'gestionar',
+    descripcion:
+      'Permite ver todos los tickets, responderlos, cambiar su estado y eliminarlos',
+  },
+
   // Reportes Generales
   {
     codigo: 'reportes_generales:ver',

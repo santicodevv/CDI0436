@@ -226,3 +226,13 @@ export {
   useEliminarDesembolso,
   desembolsosKeys,
 } from './useDesembolsos';
+
+// Tickets
+export {
+  useMisTickets,
+  useTickets,
+  useCrearTicket,
+  useActualizarTicket,
+  useEliminarTicket,
+  ticketsKeys,
+} from './useTickets';
