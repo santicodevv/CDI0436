@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Alert from '@/components/ui/Alert';
@@ -146,6 +147,15 @@ export default function ClubForm({ club, onSubmit, onCancel }: ClubFormProps) {
           </select>
           {loadingTutores && (
             <p className="text-xs text-gray-500 mt-1">Cargando tutores...</p>
+          )}
+          {!loadingTutores && tutores.length === 0 && (
+            <p className="text-xs text-amber-700 mt-1">
+              No hay tutores de tipo Club o Ambos. Cámbialo en{' '}
+              <Link href="/dashboard/tutores" target="_blank" className="font-semibold underline">
+                Tutores
+              </Link>
+              .
+            </p>
           )}
         </div>
 

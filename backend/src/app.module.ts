@@ -58,6 +58,9 @@ import { BonosModule } from './modules/bonos/bonos.module';
       useFactory: (configService: ConfigService) => {
         const dbUrl = configService.get('DATABASE_URL');
         const isLocalDb = dbUrl?.includes('localhost');
+        const synchronize =
+          configService.get('NODE_ENV') !== 'production' &&
+          configService.get('DB_SYNCHRONIZE') === 'true';
         return {
           type: 'postgres' as const,
           url: dbUrl,
@@ -88,12 +91,12 @@ import { BonosModule } from './modules/bonos/bonos.module';
             AsistenciaPersonal,
             BonoRegalo,
           ],
-          // ⚠️ MIGRACIONES: synchronize: false es obligatorio en producción.
+          // Keep schema synchronization disabled unless explicitly enabled outside production.
           // Usa los comandos del package.json para gestionar migraciones:
           //   npm run migration:generate -- src/migrations/Nombre
           //   npm run migration:run
           //   npm run migration:revert
-          synchronize: false,
+          synchronize,
           migrationsTableName: 'migrations_typeorm',
           migrations: ['dist/src/migrations/*.{ts,js}'],
           ssl: isLocalDb ? false : { rejectUnauthorized: false },
