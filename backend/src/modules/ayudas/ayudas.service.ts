@@ -1,12 +1,21 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Ayuda, EstadoAyuda } from './ayuda.entity';
 import { ComentarioAyuda } from './comentario-ayuda.entity';
+import {
+  CONFIGURACION_AYUDAS_ID,
+  ConfiguracionAyudas,
+} from './configuracion-ayudas.entity';
 import { CreateAyudaDto } from './dto/create-ayuda.dto';
 import { UpdateEstadoAyudaDto } from './dto/update-estado-ayuda.dto';
 import { UpdateFotoEntregaDto } from './dto/update-foto-entrega.dto';
 import { CreateComentarioDto } from './dto/create-comentario.dto';
+import { UpdateDisponibilidadAyudasDto } from './dto/update-disponibilidad-ayudas.dto';
 import { WhatsappService } from './whatsapp.service';
 import { WebhookService } from './webhook.service';
 import * as XLSX from 'xlsx';
@@ -18,13 +27,50 @@ export class AyudasService {
     private ayudasRepository: Repository<Ayuda>,
     @InjectRepository(ComentarioAyuda)
     private comentariosRepository: Repository<ComentarioAyuda>,
+    @InjectRepository(ConfiguracionAyudas)
+    private configuracionRepository: Repository<ConfiguracionAyudas>,
     private whatsappService: WhatsappService,
     private webhookService: WebhookService,
   ) {}
 
   async create(createAyudaDto: CreateAyudaDto): Promise<Ayuda> {
+    const disponibilidad = await this.getDisponibilidad();
+    if (!disponibilidad.habilitada) {
+      throw new ForbiddenException(
+        disponibilidad.motivo ||
+          'Las solicitudes de ayuda están cerradas temporalmente',
+      );
+    }
+
     const ayuda = this.ayudasRepository.create(createAyudaDto);
     return await this.ayudasRepository.save(ayuda);
+  }
+
+  async getDisponibilidad(): Promise<ConfiguracionAyudas> {
+    const configuracion = await this.configuracionRepository.findOne({
+      where: { id: CONFIGURACION_AYUDAS_ID },
+    });
+    // Sin fila guardada, las solicitudes se consideran abiertas.
+    return (
+      configuracion ??
+      this.configuracionRepository.create({
+        id: CONFIGURACION_AYUDAS_ID,
+        habilitada: true,
+        motivo: null,
+        actualizado_por: null,
+      })
+    );
+  }
+
+  async updateDisponibilidad(
+    dto: UpdateDisponibilidadAyudasDto,
+    actualizadoPor?: string,
+  ): Promise<ConfiguracionAyudas> {
+    const configuracion = await this.getDisponibilidad();
+    configuracion.habilitada = dto.habilitada;
+    configuracion.motivo = dto.habilitada ? null : dto.motivo!.trim();
+    configuracion.actualizado_por = actualizadoPor ?? null;
+    return await this.configuracionRepository.save(configuracion);
   }
 
   async findAll(): Promise<Ayuda[]> {

@@ -24,7 +24,24 @@ export interface ComentarioAyuda {
   creado_en: string;
 }
 
+export interface DisponibilidadAyudas {
+  habilitada: boolean;
+  motivo: string | null;
+  actualizado_por: string | null;
+  actualizado_en?: string;
+}
+
 export const ayudasApi = {
+  getDisponibilidad: async () => {
+    const response = await apiClient.get<DisponibilidadAyudas>('/ayudas/disponibilidad');
+    return response.data;
+  },
+
+  updateDisponibilidad: async (data: { habilitada: boolean; motivo?: string }) => {
+    const response = await apiClient.patch<DisponibilidadAyudas>('/ayudas/disponibilidad', data);
+    return response.data;
+  },
+
   create: async (data: Omit<Ayuda, 'id' | 'estado' | 'creado_en'>) => {
     const response = await apiClient.post('/ayudas', data);
     return response.data;

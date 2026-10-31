@@ -12,12 +12,15 @@ import { AyudaCard } from '@/components/ayudas/AyudaCard';
 import tableStyles from '@/components/ayudas/AyudaCard.module.css';
 import { AyudaComentarios } from '@/components/ayudas/AyudaComentarios';
 import { AyudaModal } from '@/components/ayudas/AyudaModal';
+import { DisponibilidadAyudas } from '@/components/ayudas/DisponibilidadAyudas';
+import { useAuth } from '@/contexts/AuthContext';
 import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import type { Ayuda, EstadoFiltroAyuda } from '@/lib/types';
 
 const ITEMS_POR_PAGINA = 10;
 
 export default function AyudasPage() {
+  const { tienePermiso } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [estadoFiltro, setEstadoFiltro] = useState<EstadoFiltroAyuda>('pendiente');
   const [fotoModal, setFotoModal] = useState<string | null>(null);
@@ -130,6 +133,8 @@ export default function AyudasPage() {
             <h1 className="text-2xl font-bold text-gray-900">Gestión de Solicitudes de Ayuda</h1>
             <p className="text-gray-600 mt-1">Administra las solicitudes registradas por los beneficiarios</p>
           </div>
+
+          <DisponibilidadAyudas puedeGestionar={tienePermiso('ayudas:disponibilidad')} />
 
           {error && <Alert variant="error">{(error as Error)?.message || 'Error al cargar las solicitudes'}</Alert>}
 

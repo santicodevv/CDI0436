@@ -247,6 +247,14 @@ export const PERMISOS_SISTEMA = [
     accion: 'eliminar',
     descripcion: 'Permite eliminar ayudas',
   },
+  {
+    codigo: 'ayudas:disponibilidad',
+    nombre: 'Habilitar o deshabilitar ayudas',
+    modulo: 'ayudas',
+    accion: 'disponibilidad',
+    descripcion:
+      'Permite abrir o cerrar el formulario público de solicitudes de ayuda',
+  },
 
   // Reportes
   {

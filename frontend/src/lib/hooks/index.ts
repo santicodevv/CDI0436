@@ -158,6 +158,8 @@ export {
   useCreateComentarioAyuda,
   useUpdateFotoEntregaAyuda,
   useExportAyudas,
+  useDisponibilidadAyudas,
+  useUpdateDisponibilidadAyudas,
   ayudasKeys,
 } from './useAyudas';
 

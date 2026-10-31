@@ -15,11 +15,13 @@ import { CreateAyudaDto } from './dto/create-ayuda.dto';
 import { UpdateEstadoAyudaDto } from './dto/update-estado-ayuda.dto';
 import { CreateComentarioDto } from './dto/create-comentario.dto';
 import { UpdateFotoEntregaDto } from './dto/update-foto-entrega.dto';
+import { UpdateDisponibilidadAyudasDto } from './dto/update-disponibilidad-ayudas.dto';
 import type { Response } from 'express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PermisosGuard } from '../auth/guards/permisos.guard';
 import { RequierePermiso } from '../auth/decorators/permisos.decorator';
 import { Public } from '../auth/decorators/public.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
 @Controller('ayudas')
 @UseGuards(JwtAuthGuard, PermisosGuard)
@@ -30,6 +32,22 @@ export class AyudasController {
   @Post()
   create(@Body() createAyudaDto: CreateAyudaDto) {
     return this.ayudasService.create(createAyudaDto);
+  }
+
+  // Consultado por el formulario público para saber si acepta solicitudes.
+  @Public()
+  @Get('disponibilidad')
+  getDisponibilidad() {
+    return this.ayudasService.getDisponibilidad();
+  }
+
+  @Patch('disponibilidad')
+  @RequierePermiso('ayudas:disponibilidad')
+  updateDisponibilidad(
+    @Body() dto: UpdateDisponibilidadAyudasDto,
+    @CurrentUser() usuario: { nombre?: string },
+  ) {
+    return this.ayudasService.updateDisponibilidad(dto, usuario?.nombre);
   }
 
   @Get()
