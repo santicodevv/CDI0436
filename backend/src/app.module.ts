@@ -2,6 +2,7 @@ import { EncuentroClub } from './modules/clubs/encuentro-club.entity';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { join } from 'path';
 
 // Importar entidades
 import { Usuario } from './modules/usuarios/usuario.entity';
@@ -104,7 +105,7 @@ import { Ticket } from './modules/tickets/ticket.entity';
           //   npm run migration:revert
           synchronize,
           migrationsTableName: 'migrations_typeorm',
-          migrations: ['dist/src/migrations/*.{ts,js}'],
+          migrations: [join(__dirname, 'migrations', '*.{ts,js}')],
           ssl: isLocalDb ? false : { rejectUnauthorized: false },
           logging: ['error', 'warn'],
           autoLoadEntities: true,
