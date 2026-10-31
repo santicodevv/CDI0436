@@ -72,6 +72,13 @@ export class AyudasController {
     res.send(buffer);
   }
 
+  // Solicitudes de un beneficiario (para su carpeta)
+  @Get('beneficiario/:codigo')
+  @RequierePermiso('ayudas:ver')
+  findByCodigoBeneficiario(@Param('codigo') codigo: string) {
+    return this.ayudasService.findByCodigoBeneficiario(codigo);
+  }
+
   @Get(':id')
   @RequierePermiso('ayudas:ver')
   findOne(@Param('id', ParseUUIDPipe) id: string) {

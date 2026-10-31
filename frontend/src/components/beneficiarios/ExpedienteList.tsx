@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import Button from '@/components/ui/Button';
 import {
   Plus,
@@ -323,15 +323,24 @@ function EntradaCard({ entrada, onDelete, onEdit }: { entrada: ExpedienteEntry; 
 
 // ── ExpedienteList ────────────────────────────────────────────────────────────
 
+// Pestañas que muestran información de otros módulos (solicitudes, desembolsos)
+export interface SeccionExtra {
+  key: string;
+  label: string;
+  count: number;
+  content: ReactNode;
+}
+
 interface ExpedienteListProps {
   expedientes: ExpedienteEntry[];
+  seccionesExtra?: SeccionExtra[];
   onAdd: () => void;
   onEdit: (entrada: ExpedienteEntry) => void;
   onDelete: (id: string) => void;
   beneficiarioNombre: string;
 }
 
-export default function ExpedienteList({ expedientes, onAdd, onEdit, onDelete, beneficiarioNombre }: ExpedienteListProps) {
+export default function ExpedienteList({ expedientes, seccionesExtra = [], onAdd, onEdit, onDelete, beneficiarioNombre }: ExpedienteListProps) {
   const [filtroActivo, setFiltroActivo] = useState('educativo');
 
   // Normalize legacy tipos
@@ -345,7 +354,11 @@ export default function ExpedienteList({ expedientes, onAdd, onEdit, onDelete, b
     return acc;
   }, {} as Record<string, number>);
 
+  for (const seccion of seccionesExtra) conteosPorTipo[seccion.key] = seccion.count;
+
   const expedientesFiltrados = expedientesNormalizados.filter(e => e.tipo === filtroActivo);
+  const seccionActiva = seccionesExtra.find(seccion => seccion.key === filtroActivo);
+  const filtros = [...FILTROS, ...seccionesExtra.map(({ key, label }) => ({ key, label }))];
 
   return (
     <div>
@@ -355,17 +368,19 @@ export default function ExpedienteList({ expedientes, onAdd, onEdit, onDelete, b
           <h2 className="text-xl font-bold text-gray-900">Expediente Digital</h2>
           <p className="text-sm text-gray-500 mt-0.5">Registros y documentación de {beneficiarioNombre}</p>
         </div>
-        <Button
-          onClick={onAdd}
-          className="flex items-center gap-2 bg-blue-600 text-white text-sm"
-        >
-          <Plus className="w-4 h-4" /> Nueva entrada
-        </Button>
+        {!seccionActiva && (
+          <Button
+            onClick={onAdd}
+            className="flex items-center gap-2 bg-blue-600 text-white text-sm"
+          >
+            <Plus className="w-4 h-4" /> Nueva entrada
+          </Button>
+        )}
       </div>
 
       {/* Filtros */}
       <div className="flex gap-2 mb-5 flex-wrap">
-        {FILTROS.map(f => {
+        {filtros.map(f => {
           const count = conteosPorTipo[f.key] ?? 0;
           const isActive = filtroActivo === f.key;
           return (
@@ -388,7 +403,9 @@ export default function ExpedienteList({ expedientes, onAdd, onEdit, onDelete, b
       </div>
 
       {/* Grid */}
-      {expedientesFiltrados.length === 0 ? (
+      {seccionActiva ? (
+        seccionActiva.content
+      ) : expedientesFiltrados.length === 0 ? (
         <div className="text-center py-16 bg-white rounded-2xl border border-dashed border-gray-200">
           <div className="mx-auto w-16 h-16 bg-gradient-to-br from-blue-50 to-indigo-100 rounded-2xl flex items-center justify-center mb-4">
             <FileText className="w-8 h-8 text-blue-400" />

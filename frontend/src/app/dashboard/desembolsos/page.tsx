@@ -40,7 +40,7 @@ export default function DesembolsosPage() {
   }, [desembolsos, paginaActual]);
 
   const handleEliminar = async (d: Desembolso) => {
-    if (confirm(`¿Eliminar el desembolso de ${d.nombre_beneficiario} por ${formatMontoRD(d.monto)}?`)) {
+    if (confirm(`¿Eliminar la Ayuda ADI de ${d.nombre_beneficiario} por ${formatMontoRD(d.monto)}?`)) {
       await eliminarMutation.mutateAsync(d.id);
     }
   };
@@ -58,7 +58,7 @@ export default function DesembolsosPage() {
             <div>
               <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
                 <Banknote className="w-7 h-7 text-emerald-600" />
-                Desembolsos
+                Ayuda ADI
               </h1>
               <p className="text-gray-500 mt-1 text-sm">
                 Ayudas económicas entregadas a beneficiarios. Cada registro aparece en la carpeta del beneficiario.
@@ -70,7 +70,7 @@ export default function DesembolsosPage() {
                 className="flex items-center justify-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm font-medium"
               >
                 <Plus className="w-4 h-4" />
-                Registrar desembolso
+                Registrar Ayuda ADI
               </button>
             )}
           </div>
@@ -114,7 +114,7 @@ export default function DesembolsosPage() {
           ) : desembolsos.length === 0 ? (
             <div className="text-center py-12 bg-white rounded-lg shadow">
               <Banknote className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900">No hay desembolsos registrados</h3>
+              <h3 className="text-lg font-medium text-gray-900">No hay Ayudas ADI registradas</h3>
             </div>
           ) : (
             <div className="bg-white rounded-lg shadow overflow-hidden">
@@ -205,7 +205,7 @@ export default function DesembolsosPage() {
 
           {tienePermiso('beneficiarios:ver') && (
             <p className="text-xs text-gray-400">
-              Para ver los desembolsos de una persona, abre su carpeta en{' '}
+              Para ver las Ayudas ADI de una persona, abre su carpeta en{' '}
               <Link href="/dashboard/beneficiarios" className="underline hover:text-gray-600">Beneficiarios</Link>.
             </p>
           )}

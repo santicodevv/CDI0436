@@ -82,3 +82,29 @@ describe('Disponibilidad de ayudas', () => {
     expect(await validate(abrir)).toHaveLength(0);
   });
 });
+
+describe('Solicitudes de ayuda por beneficiario', () => {
+  it('busca por código sin espacios ni mayúsculas y ordena por fecha', async () => {
+    const qb = {
+      where: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      getMany: jest.fn(() => Promise.resolve([])),
+    };
+    const ayudas = { createQueryBuilder: jest.fn(() => qb) };
+    const service = new AyudasService(
+      ayudas as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+    );
+
+    await service.findByCodigoBeneficiario('do-123');
+
+    expect(qb.where).toHaveBeenCalledWith(
+      'UPPER(TRIM(a.codigo_beneficiario)) = UPPER(TRIM(:codigo))',
+      { codigo: 'do-123' },
+    );
+    expect(qb.orderBy).toHaveBeenCalledWith('a.creado_en', 'DESC');
+  });
+});
