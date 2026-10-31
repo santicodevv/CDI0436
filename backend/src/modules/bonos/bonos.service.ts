@@ -7,6 +7,7 @@ import {
   MarcarEntregadoDto,
 } from './dto/create-bono-regalo.dto';
 import { FilterBonoRegaloDto } from './dto/filter-bono-regalo.dto';
+import { UpdateBonoRegaloDto } from './dto/update-bono-regalo.dto';
 
 @Injectable()
 export class BonosService {
@@ -84,6 +85,36 @@ export class BonosService {
       throw new NotFoundException(`Bono con ID ${id} no encontrado`);
     }
     return bono;
+  }
+
+  async update(id: string, dto: UpdateBonoRegaloDto): Promise<BonoRegalo> {
+    const bono = await this.findOne(id);
+    // El ValidationPipe global no aplica whitelist: copiar solo campos editables.
+    const {
+      codigo,
+      beneficiario_nombre,
+      monto,
+      mes,
+      padre_nombre,
+      cedula,
+      expira,
+    } = dto;
+    if (codigo !== undefined) bono.codigo = codigo.trim();
+    if (beneficiario_nombre !== undefined) {
+      bono.beneficiario_nombre = beneficiario_nombre.trim();
+    }
+    if (monto !== undefined) bono.monto = monto;
+    if (mes !== undefined) bono.mes = mes.trim();
+    if (padre_nombre !== undefined) {
+      bono.padre_nombre = padre_nombre.trim() || (null as any);
+    }
+    if (cedula !== undefined) {
+      bono.cedula = cedula.trim() || (null as any);
+    }
+    if (expira !== undefined) {
+      bono.expira = expira ? this.parseFecha(expira) : (null as any);
+    }
+    return await this.bonoRepo.save(bono);
   }
 
   async marcarEntregado(

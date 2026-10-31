@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { bonosRegalosApi, CreateBonoRegaloDto } from '@/lib/api/bonos';
+import { bonosRegalosApi, CreateBonoRegaloDto, UpdateBonoRegaloDto } from '@/lib/api/bonos';
 
 export const bonosKeys = {
   all: ['bonos'] as const,
@@ -36,6 +36,18 @@ export function useCrearBonosLote() {
 
   return useMutation({
     mutationFn: (bonos: CreateBonoRegaloDto[]) => bonosRegalosApi.crearLote(bonos),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: bonosKeys.regalos() });
+    },
+  });
+}
+
+export function useActualizarBono() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: UpdateBonoRegaloDto }) =>
+      bonosRegalosApi.actualizar(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: bonosKeys.regalos() });
     },

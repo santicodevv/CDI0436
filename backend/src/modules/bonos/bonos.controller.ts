@@ -23,6 +23,7 @@ import {
   MarcarEntregadoDto,
 } from './dto/create-bono-regalo.dto';
 import { FilterBonoRegaloDto } from './dto/filter-bono-regalo.dto';
+import { UpdateBonoRegaloDto } from './dto/update-bono-regalo.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PermisosGuard } from '../auth/guards/permisos.guard';
 import { RequierePermiso } from '../auth/decorators/permisos.decorator';
@@ -62,6 +63,15 @@ export class BonosController {
   @RequierePermiso('bonos:ver')
   findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.bonosService.findOne(id);
+  }
+
+  @Patch('regalos/:id')
+  @RequierePermiso('bonos:generar')
+  update(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateBonoRegaloDto,
+  ) {
+    return this.bonosService.update(id, dto);
   }
 
   @Patch('regalos/:id/entrega')

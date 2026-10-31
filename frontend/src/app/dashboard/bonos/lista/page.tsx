@@ -5,6 +5,7 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import { useBonosRegalos, useBonosEstadisticas, useBonosMeses, useMarcarEntregado, useEliminarBono } from '@/lib/hooks';
 import type { BonoRegalo } from '@/lib/api/bonos';
+import ImprimirBonoModal from '@/components/bonos/ImprimirBonoModal';
 import {
   Gift,
   Search,
@@ -17,6 +18,7 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
+  Printer,
 } from 'lucide-react';
 
 export default function ListaRegalosPage() {
@@ -25,6 +27,7 @@ export default function ListaRegalosPage() {
   const [busqueda, setBusqueda] = useState('');
   const [fotoModal, setFotoModal] = useState<BonoRegalo | null>(null);
   const [previewModal, setPreviewModal] = useState<BonoRegalo | null>(null);
+  const [imprimirModal, setImprimirModal] = useState<BonoRegalo | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [paginaActual, setPaginaActual] = useState(1);
@@ -240,6 +243,13 @@ export default function ListaRegalosPage() {
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center justify-center gap-1">
+                            <button
+                              onClick={() => setImprimirModal(bono)}
+                              className="p-1 text-gray-700 hover:bg-gray-100 rounded"
+                              title="Imprimir bono"
+                            >
+                              <Printer className="w-4 h-4" />
+                            </button>
                             {bono.foto_entrega && (
                               <button
                                 onClick={() => setPreviewModal(bono)}
@@ -379,6 +389,10 @@ export default function ListaRegalosPage() {
               </div>
             </div>
           </div>
+        )}
+
+        {imprimirModal && (
+          <ImprimirBonoModal bono={imprimirModal} onClose={() => setImprimirModal(null)} />
         )}
 
         {previewModal && previewModal.foto_entrega && (

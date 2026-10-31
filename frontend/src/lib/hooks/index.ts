@@ -210,6 +210,7 @@ export {
   useBonosEstadisticas,
   useBonosMeses,
   useCrearBonosLote,
+  useActualizarBono,
   useMarcarEntregado,
   useEliminarBono,
   bonosKeys,
