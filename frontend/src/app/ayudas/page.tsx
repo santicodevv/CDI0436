@@ -5,9 +5,10 @@ import { useForm } from 'react-hook-form';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Alert from '@/components/ui/Alert';
-import { ayudasApi } from '@/lib/api/ayudas';
+import { ayudasApi, type DisponibilidadAyudas } from '@/lib/api/ayudas';
+import { AyudasCerradas } from '@/components/ayudas/AyudasCerradas';
 import { beneficiariosApi } from '@/lib/api/beneficiarios';
-import { FileText, LogIn, Search, User, Upload, X } from 'lucide-react';
+import { FileText, Loader2, LogIn, Search, User, Upload, X } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 
@@ -37,6 +38,8 @@ export default function AyudasPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [disponibilidad, setDisponibilidad] = useState<DisponibilidadAyudas | null>(null);
+  const [comprobandoDisponibilidad, setComprobandoDisponibilidad] = useState(true);
 
   // Autocomplete state
   const [searchQuery, setSearchQuery] = useState('');
@@ -53,6 +56,30 @@ export default function AyudasPage() {
   const { register, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm<FormData>();
 
   const tipoSeleccionado = watch('tipo');
+
+  // Si no se puede consultar, se muestra el formulario: el backend vuelve a validar al enviar.
+  const comprobarDisponibilidad = async () => {
+    setComprobandoDisponibilidad(true);
+    try {
+      setDisponibilidad(await ayudasApi.getDisponibilidad());
+    } catch {
+      setDisponibilidad(null);
+    } finally {
+      setComprobandoDisponibilidad(false);
+    }
+  };
+
+  useEffect(() => {
+    let activo = true;
+    ayudasApi
+      .getDisponibilidad()
+      .then((data) => activo && setDisponibilidad(data))
+      .catch(() => undefined)
+      .finally(() => activo && setComprobandoDisponibilidad(false));
+    return () => {
+      activo = false;
+    };
+  }, []);
 
   // Close suggestions on click outside
   useEffect(() => {
@@ -178,12 +205,35 @@ export default function AyudasPage() {
       setBeneficiarioSeleccionado(null);
       setFotoPreview(null);
       setFotoBase64(null);
-    } catch {
+    } catch (err) {
+      // Las solicitudes se cerraron mientras la persona llenaba el formulario.
+      if ((err as { response?: { status?: number } }).response?.status === 403) {
+        await comprobarDisponibilidad();
+        return;
+      }
       setError('Error al registrar la solicitud. Por favor intenta nuevamente.');
     } finally {
       setLoading(false);
     }
   };
+
+  if (comprobandoDisponibilidad && !disponibilidad) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600" aria-label="Cargando" />
+      </div>
+    );
+  }
+
+  if (disponibilidad && !disponibilidad.habilitada) {
+    return (
+      <AyudasCerradas
+        motivo={disponibilidad.motivo}
+        comprobando={comprobandoDisponibilidad}
+        onComprobar={comprobarDisponibilidad}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4 sm:px-6 lg:px-8 relative">

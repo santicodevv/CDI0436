@@ -12,6 +12,7 @@ import FotoGallery from '@/components/beneficiarios/FotoGallery';
 import AgregarExpedienteModal from '@/components/beneficiarios/AgregarExpedienteModal';
 import EditarExpedienteModal from '@/components/beneficiarios/EditarExpedienteModal';
 import EditarPerfilModal from '@/components/beneficiarios/EditarPerfilModal';
+import DesembolsosBeneficiario from '@/components/desembolsos/DesembolsosBeneficiario';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   useBeneficiario,
@@ -164,6 +165,9 @@ export default function BeneficiarioDetailPage() {
               onDelete={handleDeleteExpediente}
               beneficiarioNombre={beneficiario.nombre}
             />
+
+            {/* Desembolsos (ayudas económicas) */}
+            {tienePermiso('desembolsos:ver') && <DesembolsosBeneficiario beneficiarioId={beneficiario.id} />}
           </div>
         )}
 

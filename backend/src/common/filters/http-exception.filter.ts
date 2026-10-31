@@ -26,9 +26,16 @@ export class HttpExceptionFilter implements ExceptionFilter {
           ? (exceptionResponse as any).message
           : exception.message;
 
+    // El detalle por campo de la validación también llega al cliente.
+    const errors =
+      typeof exceptionResponse === 'object' && 'errors' in exceptionResponse
+        ? (exceptionResponse as { errors?: unknown }).errors
+        : undefined;
+
     const errorResponse = {
       statusCode: status,
       message: message,
+      ...(errors !== undefined ? { errors } : {}),
       timestamp: new Date().toISOString(),
       path: request.url,
     };

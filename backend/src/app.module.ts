@@ -46,6 +46,10 @@ import { MeritoModule } from './modules/merito/merito.module';
 import { ReportesModule } from './modules/reportes/reportes.module';
 import { AsistenciaPersonalModule } from './modules/asistencia-personal/asistencia-personal.module';
 import { BonosModule } from './modules/bonos/bonos.module';
+import { DesembolsosModule } from './modules/desembolsos/desembolsos.module';
+import { Desembolso } from './modules/desembolsos/desembolso.entity';
+import { TicketsModule } from './modules/tickets/tickets.module';
+import { Ticket } from './modules/tickets/ticket.entity';
 
 @Module({
   imports: [
@@ -58,6 +62,9 @@ import { BonosModule } from './modules/bonos/bonos.module';
       useFactory: (configService: ConfigService) => {
         const dbUrl = configService.get('DATABASE_URL');
         const isLocalDb = dbUrl?.includes('localhost');
+        const synchronize =
+          configService.get('NODE_ENV') !== 'production' &&
+          configService.get('DB_SYNCHRONIZE') === 'true';
         return {
           type: 'postgres' as const,
           url: dbUrl,
@@ -87,13 +94,15 @@ import { BonosModule } from './modules/bonos/bonos.module';
             Trabajador,
             AsistenciaPersonal,
             BonoRegalo,
+            Desembolso,
+            Ticket,
           ],
-          // ⚠️ MIGRACIONES: synchronize: false es obligatorio en producción.
+          // Keep schema synchronization disabled unless explicitly enabled outside production.
           // Usa los comandos del package.json para gestionar migraciones:
           //   npm run migration:generate -- src/migrations/Nombre
           //   npm run migration:run
           //   npm run migration:revert
-          synchronize: false,
+          synchronize,
           migrationsTableName: 'migrations_typeorm',
           migrations: ['dist/src/migrations/*.{ts,js}'],
           ssl: isLocalDb ? false : { rejectUnauthorized: false },
@@ -121,6 +130,8 @@ import { BonosModule } from './modules/bonos/bonos.module';
     ReportesModule,
     AsistenciaPersonalModule,
     BonosModule,
+    DesembolsosModule,
+    TicketsModule,
   ],
 })
 export class AppModule {}

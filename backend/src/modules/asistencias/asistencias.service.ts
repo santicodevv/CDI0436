@@ -16,8 +16,8 @@ import { MarcarTodosDto } from './dto/marcar-todos.dto';
 import { JustificarMasivoDto } from './dto/justificar-masivo.dto';
 import { Clase } from '../clases/clase.entity';
 import { Beneficiario } from '../beneficiarios/beneficiario.entity';
-import { Tutor } from '../tutores/tutor.entity';
-import { fechasSinListaClase, validarPeriodoTutor } from './fechas-pase-lista';
+import { fechasClaseEnPeriodo } from './fechas-pase-lista';
+import { DiaSemana, Horario } from '../horarios/horario.entity';
 
 @Injectable()
 export class AsistenciasService {
@@ -30,8 +30,6 @@ export class AsistenciasService {
     private beneficiariosRepository: Repository<Beneficiario>,
     @InjectRepository(FotoAsistencia)
     private fotosAsistenciaRepository: Repository<FotoAsistencia>,
-    @InjectRepository(Tutor)
-    private tutoresRepository: Repository<Tutor>,
   ) {}
 
   async create(createAsistenciaDto: CreateAsistenciaDto): Promise<Asistencia> {
@@ -323,8 +321,8 @@ export class AsistenciasService {
   // Obtener reporte de asistencia por clase
   async getReportePorClase(
     claseId: string,
-    fechaInicio?: string,
-    fechaFin?: string,
+    fechaInicio: string,
+    fechaFin: string,
   ): Promise<any> {
     const clase = await this.clasesRepository.findOne({
       where: { id: claseId },
@@ -335,56 +333,93 @@ export class AsistenciasService {
       throw new NotFoundException(`Clase con ID ${claseId} no encontrada`);
     }
 
-    const query = this.asistenciasRepository
+    const asistencias = await this.asistenciasRepository
       .createQueryBuilder('asistencia')
       .leftJoinAndSelect('asistencia.beneficiario', 'beneficiario')
-      .where('asistencia.clase.id = :claseId', { claseId });
-
-    if (fechaInicio && fechaFin) {
-      query.andWhere('asistencia.fecha BETWEEN :fechaInicio AND :fechaFin', {
+      .where('asistencia.clase.id = :claseId', { claseId })
+      .andWhere('asistencia.fecha BETWEEN :fechaInicio AND :fechaFin', {
         fechaInicio,
         fechaFin,
-      });
-    }
+      })
+      .getMany();
 
-    const asistencias = await query.getMany();
+    const aFecha = (a: Asistencia) =>
+      new Date(a.fecha).toISOString().split('T')[0];
 
-    const totalRegistros = asistencias.length;
-    const presentes = asistencias.filter(
-      (a) => a.estado === EstadoAsistencia.PRESENTE,
-    ).length;
-    const ausentes = asistencias.filter(
-      (a) => a.estado === EstadoAsistencia.AUSENTE,
-    ).length;
-
-    const porcentajeAsistencia =
-      totalRegistros > 0
-        ? ((presentes / totalRegistros) * 100).toFixed(2)
-        : '0';
+    // Inscritos activos y, además, quien tenga asistencias en el mes aunque
+    // ya no esté inscrito, para que la lista refleje lo registrado.
+    const beneficiarios = new Map<string, Beneficiario>();
+    clase.beneficiarios
+      ?.filter((b) => b.activo)
+      .forEach((b) => beneficiarios.set(b.id, b));
+    asistencias.forEach((a) =>
+      beneficiarios.set(a.beneficiario.id, a.beneficiario),
+    );
 
     return {
       clase: {
         id: clase.id,
         nombre: clase.nombre,
         codigo: clase.codigo,
-        tutor: `${clase.tutor.nombre} ${clase.tutor.apellido || ''}`.trim(),
-        horarios:
-          clase.horarios
-            ?.map((h) => `${h.dia} ${h.hora_inicio} - ${h.hora_fin}`)
-            .join(', ') || 'Sin horario',
+        tutor: clase.tutor
+          ? `${clase.tutor.nombre} ${clase.tutor.apellido || ''}`.trim()
+          : '',
+        horarios: this.describirHorarios(clase.horarios || []),
       },
-      periodo: {
-        fechaInicio: fechaInicio || 'Desde el inicio',
-        fechaFin: fechaFin || 'Hasta la fecha',
-      },
-      estadisticas: {
-        totalRegistros,
-        presentes,
-        ausentes,
-        porcentajeAsistencia: `${porcentajeAsistencia}%`,
-      },
-      asistenciasPorBeneficiario: this.agruparPorBeneficiario(asistencias),
+      periodo: { fechaInicio, fechaFin },
+      fechas: fechasClaseEnPeriodo(
+        clase.horarios || [],
+        asistencias.map(aFecha),
+        fechaInicio,
+        fechaFin,
+      ),
+      beneficiarios: [...beneficiarios.values()]
+        .map((b) => ({
+          id: b.id,
+          codigo: b.codigo,
+          nombre: `${b.nombre} ${b.apellido || ''}`.trim(),
+          presentes: asistencias
+            .filter(
+              (a) =>
+                a.beneficiario.id === b.id &&
+                a.estado === EstadoAsistencia.PRESENTE,
+            )
+            .map(aFecha)
+            .sort(),
+        }))
+        .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es')),
     };
+  }
+
+  // "Sábados/Mañana", como aparece en la lista de asistencia impresa.
+  private describirHorarios(horarios: Horario[]): string {
+    const dias: Record<DiaSemana, string> = {
+      [DiaSemana.LUNES]: 'Lunes',
+      [DiaSemana.MARTES]: 'Martes',
+      [DiaSemana.MIERCOLES]: 'Miércoles',
+      [DiaSemana.JUEVES]: 'Jueves',
+      [DiaSemana.VIERNES]: 'Viernes',
+      [DiaSemana.SABADO]: 'Sábados',
+      [DiaSemana.DOMINGO]: 'Domingos',
+    };
+    const orden = Object.keys(dias);
+    const etiquetas = horarios
+      .filter((h) => h.activo)
+      .sort(
+        (a, b) =>
+          orden.indexOf(a.dia) - orden.indexOf(b.dia) ||
+          a.hora_inicio.localeCompare(b.hora_inicio),
+      )
+      .map((h) => {
+        const turno =
+          h.hora_inicio < '12:00'
+            ? 'Mañana'
+            : h.hora_inicio < '18:00'
+              ? 'Tarde'
+              : 'Noche';
+        return `${dias[h.dia]}/${turno}`;
+      });
+    return [...new Set(etiquetas)].join(', ') || 'Sin horario';
   }
 
   // Obtener reporte de asistencia por beneficiario
@@ -467,113 +502,6 @@ export class AsistenciasService {
         porcentajeAsistencia: `${porcentajeAsistencia}%`,
       },
       asistenciasPorClase: this.agruparPorClase(asistencias),
-    };
-  }
-
-  // Obtener reporte de asistencia por tutor
-  async getReportePorTutor(
-    tutorId: string,
-    fechaInicio?: string,
-    fechaFin?: string,
-  ): Promise<any> {
-    validarPeriodoTutor(fechaInicio, fechaFin);
-    const hoy = new Intl.DateTimeFormat('en-CA', {
-      timeZone: 'America/Santo_Domingo',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-    }).format(new Date());
-    const tutor = await this.tutoresRepository.findOne({
-      where: { id: tutorId },
-    });
-
-    if (!tutor) {
-      throw new NotFoundException(`Tutor con ID ${tutorId} no encontrado`);
-    }
-
-    const clases = await this.clasesRepository.find({
-      where: { tutor: { id: tutorId }, activo: true },
-      relations: ['horarios', 'beneficiarios'],
-    });
-
-    const query = this.asistenciasRepository
-      .createQueryBuilder('asistencia')
-      .leftJoinAndSelect('asistencia.clase', 'clase')
-      .where('clase.tutor.id = :tutorId', { tutorId });
-
-    if (fechaInicio)
-      query.andWhere('asistencia.fecha >= :fechaInicio', { fechaInicio });
-    if (fechaFin) query.andWhere('asistencia.fecha <= :fechaFin', { fechaFin });
-
-    const asistencias = await query.getMany();
-
-    const asistenciasPorClase = clases.map((clase) => {
-      const asistenciasClase = asistencias.filter(
-        (a) => a.clase.id === clase.id,
-      );
-
-      const fechasUnicas = [
-        ...new Set(
-          asistenciasClase.map((a) => {
-            const d = new Date(a.fecha);
-            return d.toISOString().split('T')[0];
-          }),
-        ),
-      ].sort();
-
-      return {
-        clase: {
-          id: clase.id,
-          nombre: clase.nombre,
-          codigo: clase.codigo,
-          horarios:
-            clase.horarios
-              ?.map((h) => `${h.dia} ${h.hora_inicio} - ${h.hora_fin}`)
-              .join(', ') || 'Sin horario',
-          totalInscritos: clase.beneficiarios?.length || 0,
-        },
-        estadisticas: {
-          diasConAsistenciaRegistrada: fechasUnicas.length,
-        },
-        fechasRegistro: fechasUnicas,
-        fechasSinRegistro: clase.beneficiarios?.some((b) => b.activo)
-          ? fechasSinListaClase(
-              clase.horarios || [],
-              fechasUnicas,
-              clase.creado_en,
-              fechaInicio,
-              fechaFin,
-              hoy,
-            )
-          : [],
-      };
-    });
-
-    const todasLasFechasUnicas = [
-      ...new Set(
-        asistencias.map((a) => {
-          const d = new Date(a.fecha);
-          return d.toISOString().split('T')[0];
-        }),
-      ),
-    ].sort();
-
-    return {
-      tutor: {
-        id: tutor.id,
-        nombre: `${tutor.nombre} ${tutor.apellido || ''}`.trim(),
-        especialidad: tutor.especialidad,
-      },
-      periodo: {
-        fechaInicio: fechaInicio || 'Desde el inicio',
-        fechaFin: fechaFin || 'Hasta la fecha',
-      },
-      estadisticas: {
-        totalClasesAsignadas: clases.length,
-        totalDiasConRegistroGlobal: todasLasFechasUnicas.length,
-      },
-      clases: asistenciasPorClase,
-      resumenFechasGlobal: todasLasFechasUnicas,
     };
   }
 

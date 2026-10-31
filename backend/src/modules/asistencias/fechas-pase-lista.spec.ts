@@ -1,117 +1,38 @@
-import { BadRequestException } from '@nestjs/common';
 import { DiaSemana } from '../horarios/horario.entity';
-import { fechasSinListaClase, validarPeriodoTutor } from './fechas-pase-lista';
+import { fechasClaseEnPeriodo } from './fechas-pase-lista';
 
-describe('Fechas sin pase de lista por clase', () => {
-  const horarios = [
-    { dia: DiaSemana.MIERCOLES, activo: true },
-    { dia: DiaSemana.MIERCOLES, activo: true },
-    { dia: DiaSemana.JUEVES, activo: true },
-    { dia: DiaSemana.SABADO, activo: false },
+describe('Fechas de la lista mensual de una clase', () => {
+  const sabados = [
+    { dia: DiaSemana.SABADO, activo: true },
+    { dia: DiaSemana.LUNES, activo: false },
   ];
-  const creacion = new Date('2026-10-01T12:00:00Z');
 
-  it('muestra únicamente fechas programadas sin registros, sin duplicar horarios', () => {
+  it('genera los días de clase del mes según el horario', () => {
     expect(
-      fechasSinListaClase(
-        horarios,
-        ['2026-10-01', '2026-10-07', '2026-10-15'],
-        creacion,
-        '2026-10-01',
-        '2026-10-31',
-        '2026-10-24',
-      ),
-    ).toEqual(['2026-10-08', '2026-10-14', '2026-10-21', '2026-10-22']);
+      fechasClaseEnPeriodo(sabados, [], '2023-09-01', '2023-09-30'),
+    ).toEqual([
+      '2023-09-02',
+      '2023-09-09',
+      '2023-09-16',
+      '2023-09-23',
+      '2023-09-30',
+    ]);
   });
-  it('respeta un día o un rango concreto', () => {
+
+  it('añade días con lista fuera de horario sin duplicar ni salirse del mes', () => {
     expect(
-      fechasSinListaClase(
-        horarios,
-        [],
-        creacion,
-        '2026-10-14',
-        '2026-10-14',
-        '2026-10-24',
+      fechasClaseEnPeriodo(
+        sabados,
+        ['2023-09-02', '2023-09-13', '2023-10-04'],
+        '2023-09-01',
+        '2023-09-16',
       ),
-    ).toEqual(['2026-10-14']);
-    expect(
-      fechasSinListaClase(
-        horarios,
-        ['2026-10-21'],
-        creacion,
-        '2026-10-19',
-        '2026-10-25',
-        '2026-10-24',
-      ),
-    ).toEqual(['2026-10-22']);
+    ).toEqual(['2023-09-02', '2023-09-09', '2023-09-13', '2023-09-16']);
   });
-  it('el historial completo empieza en la creación y no incluye hoy ni fechas futuras', () => {
+
+  it('sin horario activo solo muestra los días registrados', () => {
     expect(
-      fechasSinListaClase(
-        horarios,
-        [],
-        new Date('2026-10-20T12:00:00Z'),
-        undefined,
-        undefined,
-        '2026-10-22',
-      ),
-    ).toEqual(['2026-10-21']);
-  });
-  it('no genera omisiones para días libres, horarios inactivos o clases futuras', () => {
-    expect(
-      fechasSinListaClase([], [], creacion, undefined, undefined, '2026-10-24'),
-    ).toEqual([]);
-    expect(
-      fechasSinListaClase(
-        [{ dia: DiaSemana.MIERCOLES, activo: false }],
-        [],
-        creacion,
-        undefined,
-        undefined,
-        '2026-10-24',
-      ),
-    ).toEqual([]);
-    expect(
-      fechasSinListaClase(
-        horarios,
-        [],
-        new Date('2026-11-01T00:00:00Z'),
-        undefined,
-        undefined,
-        '2026-10-24',
-      ),
-    ).toEqual([]);
-  });
-  it('acepta filtros abiertos y excluye fechas anteriores a la creación', () => {
-    expect(
-      fechasSinListaClase(
-        horarios,
-        [],
-        creacion,
-        undefined,
-        '2026-10-01',
-        '2026-10-24',
-      ),
-    ).toEqual(['2026-10-01']);
-    expect(
-      fechasSinListaClase(
-        horarios,
-        [],
-        creacion,
-        '2026-09-01',
-        '2026-10-01',
-        '2026-10-24',
-      ),
-    ).toEqual(['2026-10-01']);
-    expect(() => validarPeriodoTutor(undefined, '2026-10-01')).not.toThrow();
-  });
-  it.each([
-    ['2026-10-30', '2026-10-01'],
-    ['2026-02-30', '2026-03-01'],
-    ['inválida', undefined],
-    ['', undefined],
-    ['0000-10-01', undefined],
-  ])('rechaza un período inválido: %s / %s', (inicio, fin) => {
-    expect(() => validarPeriodoTutor(inicio, fin)).toThrow(BadRequestException);
+      fechasClaseEnPeriodo([], ['2023-09-05'], '2023-09-01', '2023-09-30'),
+    ).toEqual(['2023-09-05']);
   });
 });

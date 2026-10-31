@@ -19,6 +19,14 @@ export function formatMonto(val: string): string {
   return `RD$${num.toLocaleString('es-DO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
+function escapeHtml(val: string): string {
+  return val
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
 interface PrintBonoRow {
   padre: string;
   cedula: string;
@@ -27,8 +35,8 @@ interface PrintBonoRow {
   monto: string;
 }
 
-export function imprimirBonos(rows: PrintBonoRow[], mes: string, expira: string): void {
-  if (rows.length === 0) return;
+export function imprimirBonos(rows: PrintBonoRow[], mes: string, expira: string): boolean {
+  if (rows.length === 0) return false;
 
   const totalPagesCount = Math.ceil(rows.length / 2);
   const bondPages = Array.from({ length: totalPagesCount }, (_, pageIdx) => {
@@ -38,13 +46,13 @@ export function imprimirBonos(rows: PrintBonoRow[], mes: string, expira: string)
         ${pageRows.map((row) => `
           <div class="print-bond">
             <img src="${window.location.origin}/bond_template.png" alt="bono" />
-            <span class="pf" style="top:35%;left:44.5%;font-size:13pt">${mes}</span>
-            <span class="pf" style="top:46.3%;left:32%;font-size:11pt;max-width:27%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;display:inline-block">${row.padre}</span>
-            <span class="pf" style="top:46.3%;left:76%;font-size:11pt;max-width:18%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;display:inline-block">${row.cedula}</span>
-            <span class="pf" style="top:55.2%;left:37%;font-size:11pt;max-width:26%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;display:inline-block">${row.beneficiario}</span>
-            <span class="pf" style="top:55.2%;left:76%;font-size:11pt">${row.codigo}</span>
-            <span class="pf" style="top:64.5%;left:25%;font-size:13pt;color:#1a1a1a">${formatMonto(row.monto)}</span>
-            <span class="pf" style="top:80%;left:66%;font-size:11pt;color:red">${expira}</span>
+            <span class="pf" style="top:35%;left:44.5%;font-size:13pt">${escapeHtml(mes)}</span>
+            <span class="pf" style="top:46.3%;left:32%;font-size:11pt;max-width:27%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;display:inline-block">${escapeHtml(row.padre)}</span>
+            <span class="pf" style="top:46.3%;left:76%;font-size:11pt;max-width:18%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;display:inline-block">${escapeHtml(row.cedula)}</span>
+            <span class="pf" style="top:55.2%;left:37%;font-size:11pt;max-width:26%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;display:inline-block">${escapeHtml(row.beneficiario)}</span>
+            <span class="pf" style="top:55.2%;left:76%;font-size:11pt">${escapeHtml(row.codigo)}</span>
+            <span class="pf" style="top:64.5%;left:25%;font-size:13pt;color:#1a1a1a">${escapeHtml(formatMonto(row.monto))}</span>
+            <span class="pf" style="top:80%;left:66%;font-size:11pt;color:red">${escapeHtml(expira)}</span>
           </div>
         `).join('')}
       </div>
@@ -55,7 +63,7 @@ export function imprimirBonos(rows: PrintBonoRow[], mes: string, expira: string)
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Bonos - ${mes}</title>
+  <title>Bonos - ${escapeHtml(mes)}</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: Arial, Helvetica, sans-serif; }
@@ -104,8 +112,8 @@ export function imprimirBonos(rows: PrintBonoRow[], mes: string, expira: string)
 </html>`;
 
   const printWindow = window.open('', '_blank');
-  if (printWindow) {
-    printWindow.document.write(html);
-    printWindow.document.close();
-  }
+  if (!printWindow) return false;
+  printWindow.document.write(html);
+  printWindow.document.close();
+  return true;
 }

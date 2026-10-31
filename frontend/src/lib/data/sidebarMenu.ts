@@ -1,4 +1,4 @@
-import { Home, Users, BookOpen, Clock, FileText, Settings, Shield, UserCog, UserCheck, UserCircle, UtensilsCrossed, Tent, BarChart3, HeartPulse, Award, Gift, Cake, Trophy, Package, ListChecks } from 'lucide-react';
+import { Home, Users, BookOpen, Clock, FileText, Settings, Shield, UserCog, UserCheck, UserCircle, UtensilsCrossed, Tent, BarChart3, HeartPulse, Award, Gift, Cake, Trophy, Package, ListChecks, Banknote, LifeBuoy, Inbox } from 'lucide-react';
 import type { MenuItem } from '@/lib/types';
 
 export const menuGroups: MenuItem[] = [
@@ -28,6 +28,12 @@ export const menuGroups: MenuItem[] = [
         icon: FileText,
         href: '/dashboard/ayudas',
         permisos: ['ayudas:ver'],
+      },
+      {
+        title: 'Desembolsos',
+        icon: Banknote,
+        href: '/dashboard/desembolsos',
+        permisos: ['desembolsos:ver'],
       },
       {
         title: 'Supervivencia',
@@ -127,6 +133,18 @@ export const menuGroups: MenuItem[] = [
       },
     ],
   },
+  {
+    title: 'Soporte',
+    icon: LifeBuoy,
+    subItems: [
+      {
+        title: 'Mis Tickets',
+        icon: LifeBuoy,
+        href: '/dashboard/tickets',
+        permisos: ['tickets:crear', 'tickets:gestionar'],
+      },
+    ],
+  },
 ];
 
 export const adminGroup: MenuItem = {
@@ -150,6 +168,12 @@ export const adminGroup: MenuItem = {
       icon: Shield,
       href: '/dashboard/roles',
       permisos: ['roles:ver'],
+    },
+    {
+      title: 'Gestión de Tickets',
+      icon: Inbox,
+      href: '/dashboard/tickets/gestion',
+      permisos: ['tickets:gestionar'],
     },
   ],
 };

@@ -338,13 +338,13 @@ export interface ReporteAsistenciaClase {
     fechaInicio: string;
     fechaFin: string;
   };
-  estadisticas: {
-    totalRegistros: number;
-    presentes: number;
-    ausentes: number;
-    porcentajeAsistencia: string;
-  };
-  asistenciasPorBeneficiario: ReporteAsistenciaBeneficiarioItem[];
+  fechas: string[];
+  beneficiarios: {
+    id: string;
+    codigo: string;
+    nombre: string;
+    presentes: string[];
+  }[];
 }
 
 // ── Expediente types ─────────────────────────────────────────────────────────
@@ -605,7 +605,7 @@ export interface NotaFormValues {
 // ── Reportes types ──────────────────────────────────────────────────────────
 export type TipoPeriodo = 'dia' | 'mes' | 'anio' | 'rango' | 'todo';
 export type TipoReporteGlobal = 'estadistico' | 'detallado';
-export type TipoReportePrincipal = 'clase' | 'beneficiario' | 'tutor' | 'global' | 'ausencias' | 'listasPendientes';
+export type TipoReportePrincipal = 'clase' | 'beneficiario' | 'tutor' | 'global' | 'ausencias';
 
 export interface ReporteFiltrosClase {
   id: string;

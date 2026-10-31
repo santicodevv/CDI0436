@@ -29,6 +29,8 @@ export interface CreateBonoRegaloDto {
   beneficiario_id?: string;
 }
 
+export type UpdateBonoRegaloDto = Partial<Omit<CreateBonoRegaloDto, 'beneficiario_id'>>;
+
 export interface BonoRegaloEstadisticas {
   total: number;
   entregados: number;
@@ -57,6 +59,11 @@ export const bonosRegalosApi = {
 
   getOne: async (id: string): Promise<BonoRegalo> => {
     const response = await apiClient.get(`/bonos/regalos/${id}`);
+    return response.data;
+  },
+
+  actualizar: async (id: string, data: UpdateBonoRegaloDto): Promise<BonoRegalo> => {
+    const response = await apiClient.patch(`/bonos/regalos/${id}`, data);
     return response.data;
   },
 

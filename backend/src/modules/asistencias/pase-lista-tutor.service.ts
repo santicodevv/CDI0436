@@ -90,6 +90,18 @@ export class PaseListaTutorService {
         SELECT 'supervivencia', c.id, c.nombre, c.codigo,
           (SELECT count(*)::int FROM supervivencia_beneficiario cb JOIN beneficiarios b ON b.id=cb.beneficiario_id AND b.activo=true WHERE cb.supervivencia_id=c.id)
         FROM supervivencias c WHERE c.tutor_id=$1 AND c.activo=true
+      ), registros AS (
+        SELECT 'clase'::text AS tipo, a.clase_id AS id, a.fecha, count(DISTINCT a.beneficiario_id)::int AS cantidad
+        FROM asistencias a JOIN clases c ON c.id=a.clase_id AND c.tutor_id=$1
+        WHERE a.fecha BETWEEN $2::date AND $3::date GROUP BY a.clase_id,a.fecha
+        UNION ALL
+        SELECT 'club', a.club_id, a.fecha, count(DISTINCT a.beneficiario_id)::int
+        FROM asistencias_club a JOIN clubes c ON c.id=a.club_id AND c.tutor_id=$1
+        WHERE a.fecha BETWEEN $2::date AND $3::date GROUP BY a.club_id,a.fecha
+        UNION ALL
+        SELECT 'supervivencia', a.supervivencia_id, a.fecha, count(DISTINCT a.beneficiario_id)::int
+        FROM asistencias_supervivencia a JOIN supervivencias c ON c.id=a.supervivencia_id AND c.tutor_id=$1
+        WHERE a.fecha BETWEEN $2::date AND $3::date GROUP BY a.supervivencia_id,a.fecha
       ), esperadas AS (
         SELECT DISTINCT 'clase'::text AS tipo, c.id, d.fecha
         FROM clases c JOIN clase_horario ch ON ch.clase_id=c.id
@@ -107,18 +119,8 @@ export class PaseListaTutorService {
         SELECT 'supervivencia', e.supervivencia_id, e.fecha FROM encuentros_supervivencia e
         JOIN supervivencias c ON c.id=e.supervivencia_id AND c.tutor_id=$1 AND c.activo=true
         WHERE e.fecha BETWEEN $2::date AND $3::date
-      ), registros AS (
-        SELECT 'clase'::text AS tipo, a.clase_id AS id, a.fecha, count(DISTINCT a.beneficiario_id)::int AS cantidad
-        FROM asistencias a JOIN clases c ON c.id=a.clase_id AND c.tutor_id=$1
-        WHERE a.fecha BETWEEN $2::date AND $3::date GROUP BY a.clase_id,a.fecha
-        UNION ALL
-        SELECT 'club', a.club_id, a.fecha, count(DISTINCT a.beneficiario_id)::int
-        FROM asistencias_club a JOIN clubes c ON c.id=a.club_id AND c.tutor_id=$1
-        WHERE a.fecha BETWEEN $2::date AND $3::date GROUP BY a.club_id,a.fecha
-        UNION ALL
-        SELECT 'supervivencia', a.supervivencia_id, a.fecha, count(DISTINCT a.beneficiario_id)::int
-        FROM asistencias_supervivencia a JOIN supervivencias c ON c.id=a.supervivencia_id AND c.tutor_id=$1
-        WHERE a.fecha BETWEEN $2::date AND $3::date GROUP BY a.supervivencia_id,a.fecha
+        UNION
+        SELECT tipo, id, fecha FROM registros
       )
       SELECT e.fecha::text AS fecha, a.tipo, a.id AS "actividadId", a.nombre AS actividad,
         a.codigo, a.inscritos, COALESCE(r.cantidad,0)::int AS registrados

@@ -247,6 +247,14 @@ export const PERMISOS_SISTEMA = [
     accion: 'eliminar',
     descripcion: 'Permite eliminar ayudas',
   },
+  {
+    codigo: 'ayudas:disponibilidad',
+    nombre: 'Habilitar o deshabilitar ayudas',
+    modulo: 'ayudas',
+    accion: 'disponibilidad',
+    descripcion:
+      'Permite abrir o cerrar el formulario público de solicitudes de ayuda',
+  },
 
   // Reportes
   {
@@ -301,6 +309,55 @@ export const PERMISOS_SISTEMA = [
     accion: 'entregar',
     descripcion:
       'Permite subir fotos de entrega y marcar bonos como entregados',
+  },
+
+  // Desembolsos (ayudas económicas registradas a beneficiarios)
+  {
+    codigo: 'desembolsos:ver',
+    nombre: 'Ver desembolsos',
+    modulo: 'desembolsos',
+    accion: 'ver',
+    descripcion:
+      'Permite ver las ayudas económicas registradas y las del beneficiario',
+  },
+  {
+    codigo: 'desembolsos:crear',
+    nombre: 'Registrar desembolsos',
+    modulo: 'desembolsos',
+    accion: 'crear',
+    descripcion: 'Permite registrar ayudas económicas a beneficiarios',
+  },
+  {
+    codigo: 'desembolsos:editar',
+    nombre: 'Editar desembolsos',
+    modulo: 'desembolsos',
+    accion: 'editar',
+    descripcion: 'Permite corregir ayudas económicas registradas',
+  },
+  {
+    codigo: 'desembolsos:eliminar',
+    nombre: 'Eliminar desembolsos',
+    modulo: 'desembolsos',
+    accion: 'eliminar',
+    descripcion: 'Permite eliminar ayudas económicas registradas',
+  },
+
+  // Tickets (solicitudes de cambios y reportes de problemas)
+  {
+    codigo: 'tickets:crear',
+    nombre: 'Crear tickets',
+    modulo: 'tickets',
+    accion: 'crear',
+    descripcion:
+      'Permite enviar solicitudes de cambios o problemas y ver las propias',
+  },
+  {
+    codigo: 'tickets:gestionar',
+    nombre: 'Gestionar tickets',
+    modulo: 'tickets',
+    accion: 'gestionar',
+    descripcion:
+      'Permite ver todos los tickets, responderlos, cambiar su estado y eliminarlos',
   },
 
   // Reportes Generales

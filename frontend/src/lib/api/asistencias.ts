@@ -132,15 +132,6 @@ export const asistenciasApi = {
     return response.data;
   },
 
-  getReportePorTutor: async (tutorId: string, fechaInicio?: string, fechaFin?: string) => {
-    const params = new URLSearchParams();
-    if (fechaInicio) params.append('fechaInicio', fechaInicio);
-    if (fechaFin) params.append('fechaFin', fechaFin);
-
-    const response = await apiClient.get(`/asistencias/reporte/tutor/${tutorId}?${params}`);
-    return response.data;
-  },
-
   getReporteAusenciasGeneral: async (fechaInicio?: string, fechaFin?: string) => {
     const params = new URLSearchParams();
     if (fechaInicio) params.append('fechaInicio', fechaInicio);

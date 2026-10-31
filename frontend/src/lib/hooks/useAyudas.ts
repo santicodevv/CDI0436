@@ -7,7 +7,27 @@ export const ayudasKeys = {
   lists: () => [...ayudasKeys.all, 'list'] as const,
   detalles: () => [...ayudasKeys.all, 'detail'] as const,
   comentarios: (ayudaId: string) => [...ayudasKeys.all, 'comentarios', ayudaId] as const,
+  disponibilidad: () => [...ayudasKeys.all, 'disponibilidad'] as const,
 };
+
+export function useDisponibilidadAyudas() {
+  return useQuery({
+    queryKey: ayudasKeys.disponibilidad(),
+    queryFn: () => ayudasApi.getDisponibilidad(),
+  });
+}
+
+export function useUpdateDisponibilidadAyudas() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: Parameters<typeof ayudasApi.updateDisponibilidad>[0]) =>
+      ayudasApi.updateDisponibilidad(data),
+    onSuccess: (disponibilidad) => {
+      queryClient.setQueryData(ayudasKeys.disponibilidad(), disponibilidad);
+    },
+  });
+}
 
 export function useAyudas() {
   return useQuery({

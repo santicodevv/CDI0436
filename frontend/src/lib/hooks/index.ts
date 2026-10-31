@@ -158,6 +158,8 @@ export {
   useCreateComentarioAyuda,
   useUpdateFotoEntregaAyuda,
   useExportAyudas,
+  useDisponibilidadAyudas,
+  useUpdateDisponibilidadAyudas,
   ayudasKeys,
 } from './useAyudas';
 
@@ -208,7 +210,29 @@ export {
   useBonosEstadisticas,
   useBonosMeses,
   useCrearBonosLote,
+  useActualizarBono,
   useMarcarEntregado,
   useEliminarBono,
   bonosKeys,
 } from './useBonos';
+
+// Desembolsos
+export {
+  useDesembolsos,
+  useDesembolsosBeneficiario,
+  useBeneficiarioPorCodigo,
+  useCrearDesembolso,
+  useActualizarDesembolso,
+  useEliminarDesembolso,
+  desembolsosKeys,
+} from './useDesembolsos';
+
+// Tickets
+export {
+  useMisTickets,
+  useTickets,
+  useCrearTicket,
+  useActualizarTicket,
+  useEliminarTicket,
+  ticketsKeys,
+} from './useTickets';
