@@ -73,6 +73,20 @@ export class UsuariosService {
     return safeUsuario as Usuario;
   }
 
+  // Única forma de cargar password_hash (la columna tiene select: false)
+  private findConPassword(where: { id: string } | { correo: string }) {
+    const query = this.usuariosRepository
+      .createQueryBuilder('usuario')
+      .addSelect('usuario.password_hash')
+      .leftJoinAndSelect('usuario.rol', 'rol')
+      .leftJoinAndSelect('rol.permisos', 'permisos');
+    return 'id' in where
+      ? query.where('usuario.id = :id', { id: where.id }).getOne()
+      : query
+          .where('usuario.correo = :correo', { correo: where.correo })
+          .getOne();
+  }
+
   // findByCorreo puede devolver null si no existe
   async findByCorreo(correo: string): Promise<Usuario | null> {
     return await this.usuariosRepository.findOne({
@@ -120,9 +134,7 @@ export class UsuariosService {
     id: string,
     changePasswordDto: ChangePasswordDto,
   ): Promise<void> {
-    const usuario = await this.usuariosRepository.findOne({
-      where: { id },
-    });
+    const usuario = await this.findConPassword({ id });
 
     if (!usuario) {
       throw new NotFoundException(`Usuario con ID ${id} no encontrado`);
@@ -211,7 +223,7 @@ export class UsuariosService {
     correo: string,
     password: string,
   ): Promise<Usuario | null> {
-    const usuario = await this.findByCorreo(correo);
+    const usuario = await this.findConPassword({ correo });
 
     if (!usuario || !usuario.activo) {
       return null;
@@ -222,6 +234,7 @@ export class UsuariosService {
       return null;
     }
 
-    return usuario;
+    const { password_hash: _password_hash, ...safeUsuario } = usuario;
+    return safeUsuario as Usuario;
   }
 }
