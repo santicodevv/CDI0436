@@ -23,7 +23,9 @@ export class Usuario {
   @Column({ unique: true, length: 100 })
   correo: string;
 
-  @Column()
+  // Nunca se carga por defecto para que no salga en ninguna respuesta de la API.
+  // Quien necesite compararlo debe pedirlo con UsuariosService.findConPassword().
+  @Column({ select: false })
   password_hash: string;
 
   @ManyToOne(() => Rol, (rol) => rol.usuarios, { eager: true })
