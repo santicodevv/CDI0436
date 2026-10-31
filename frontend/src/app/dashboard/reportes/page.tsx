@@ -9,7 +9,6 @@ import ReportesHeader from '@/components/reportes/ReportesHeader';
 import ReportesFilters from '@/components/reportes/ReportesFilters';
 import ReportePreview from '@/components/reportes/ReportePreview';
 import TabSelector from '@/components/reportes/TabSelector';
-import ReporteListasPendientes from '@/components/reportes/ReporteListasPendientes';
 import {
   useReporteClase,
   useReporteBeneficiario,
@@ -19,7 +18,6 @@ import {
 } from '@/lib/hooks/useReportes';
 import {
   generarPDFClase,
-  generarExcelClase,
   generarPDFBeneficiario,
   generarExcelBeneficiario,
   generarPDFTutor,
@@ -37,6 +35,8 @@ import type {
   ReportContext,
   ReporteFiltrosClase,
   ReporteFiltrosGlobal,
+  ReporteAsistenciaClase,
+  ReportePaseListaTutor,
 } from '@/lib/types';
 
 export default function ReportesPage() {
@@ -63,7 +63,7 @@ export default function ReportesPage() {
   const qAusen = useReporteAusencias(fGlobal);
 
   const data = useMemo(() => {
-    const map: Record<TipoReportePrincipal, unknown> = { clase: qClase.data, beneficiario: qBene.data, tutor: qTutor.data, global: qGlobal.data, ausencias: qAusen.data, listasPendientes: null };
+    const map: Record<TipoReportePrincipal, unknown> = { clase: qClase.data, beneficiario: qBene.data, tutor: qTutor.data, global: qGlobal.data, ausencias: qAusen.data };
     return map[tab] ?? null;
   }, [tab, qClase.data, qBene.data, qTutor.data, qGlobal.data, qAusen.data]);
 
@@ -96,22 +96,18 @@ export default function ReportesPage() {
     if (!data || !ctx) return;
     try {
       if (ctx.tipo === 'clase') {
-        if (fmt === 'pdf') {
-          generarPDFClase(data, ctx.fechaReporte);
-        } else {
-          generarExcelClase(data);
-        }
+        generarPDFClase(data as ReporteAsistenciaClase).catch(() => setError('Error al exportar. Verifica los datos.'));
       } else if (ctx.tipo === 'beneficiario') {
         if (fmt === 'pdf') {
-          generarPDFBeneficiario(data, ctx.fechaReporte);
+          generarPDFBeneficiario(data, ctx.fechaReporte).catch(() => setError('Error al exportar. Verifica los datos.'));
         } else {
           generarExcelBeneficiario(data);
         }
       } else if (ctx.tipo === 'tutor') {
         if (fmt === 'pdf') {
-          generarPDFTutor(data, ctx.fechaReporte);
+          generarPDFTutor(data as ReportePaseListaTutor, ctx.fechaReporte).catch(() => setError('Error al exportar. Verifica los datos.'));
         } else {
-          generarExcelTutor(data);
+          generarExcelTutor(data as ReportePaseListaTutor);
         }
       } else if (ctx.tipo === 'global') {
         if (fmt === 'pdf') {
@@ -138,7 +134,7 @@ export default function ReportesPage() {
           {error && <Alert variant="error" onClose={() => setError('')}>{error}</Alert>}
           {success && <Alert variant="success" onClose={() => setSuccess('')}>{success}</Alert>}
           <TabSelector activeTab={tab} onSelect={switchTab} />
-          {tab === 'listasPendientes' ? <ReporteListasPendientes /> : tab === 'global' || tab === 'ausencias' ? (
+          {tab === 'global' || tab === 'ausencias' ? (
             <ReportesFilters
               tipoPeriodo={periodo} tipoReporteGlobal={detalle} fechaDia={fDia} mesSeleccionado={fMes}
               anioSeleccionado={fAnio} fechaInicio={fIni} fechaFin={fFin} isLoading={loading} isGlobal

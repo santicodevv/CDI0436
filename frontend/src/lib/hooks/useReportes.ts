@@ -77,12 +77,12 @@ export function useReporteTutor(
       filtros?.fechaFin
     ),
     queryFn: () =>
-      asistenciasApi.getReportePorTutor(
+      asistenciasApi.getPaseListaTutor(
         filtros!.tutorId!,
-        filtros!.fechaInicio,
-        filtros!.fechaFin
+        filtros!.fechaInicio!,
+        filtros!.fechaFin!
       ),
-    enabled: !!filtros && !!filtros.tutorId,
+    enabled: !!filtros?.tutorId && !!filtros.fechaInicio && !!filtros.fechaFin,
     retry: false,
     staleTime: 0,
     refetchOnWindowFocus: false,

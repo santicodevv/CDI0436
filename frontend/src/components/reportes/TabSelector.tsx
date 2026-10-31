@@ -19,15 +19,14 @@ interface TabConfig {
 const tabs: TabConfig[] = [
   { key: 'clase', icon: BookOpen, label: 'Por Clase', desc: 'Asistencias de una clase en específico', color: 'blue' },
   { key: 'beneficiario', icon: Users, label: 'Por Beneficiario', desc: 'Historial completo de un estudiante', color: 'blue' },
-  { key: 'tutor', icon: UserCheck, label: 'Por Tutor', desc: 'Control de pase de lista', color: 'blue' },
-  { key: 'listasPendientes', icon: UserX, label: 'Listas pendientes', desc: 'Días en que un tutor no pasó lista', color: 'red' },
+  { key: 'tutor', icon: UserCheck, label: 'Por Tutor', desc: 'Pase de lista de clases, clubs y Supervivencia', color: 'blue' },
   { key: 'global', icon: Globe, label: 'Estadísticas Globales', desc: 'Resumen general de todas las clases', color: 'blue' },
   { key: 'ausencias', icon: UserX, label: 'Ausencias', desc: 'Listado general de faltas', color: 'red' },
 ];
 
 export default function TabSelector({ activeTab, onSelect }: TabSelectorProps) {
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
       {tabs.map(({ key, label, desc, icon: Icon, color }) => {
         const isActive = activeTab === key;
         const isBlue = color === 'blue';

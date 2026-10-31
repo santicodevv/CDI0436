@@ -1,11 +1,15 @@
 'use client';
 
 import { Eye, FileText, FileSpreadsheet } from 'lucide-react';
-import { formatFechaEs, formatFechaCompletaEs } from '@/lib/utils/formatters';
+import { formatFechaEs } from '@/lib/utils/formatters';
 import type { ReportContext, ReporteContextGlobal, ReporteContextAusencias, StatItem, TableRow, ReporteAsistenciaFechaItem as RegistroFecha } from '@/lib/types';
 import GraficoAsistencia from './GraficoAsistencia';
 import ReporteEstadisticoTable from './ReporteEstadisticoTable';
 import ReporteDetalladoTable from './ReporteDetalladoTable';
+import ListaAsistenciaClase from './ListaAsistenciaClase';
+import ListaFechasReporte from './ListaFechasReporte';
+import { actividadesTutor, filasBeneficiario, filasTutor, totalesTutor } from '@/lib/utils/reportesExport';
+import type { ReportePaseListaTutor } from '@/lib/types';
 
 interface ReportePreviewProps {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- complex dynamic report shape
@@ -46,18 +50,6 @@ function renderDateChips(registros: RegistroFecha[], estado: string, colorClass:
   );
 }
 
-function renderFechasTutor(fechas: string[], colorClass: string) {
-  return fechas.length ? (
-    <div className="flex flex-wrap gap-1 min-w-[150px] max-w-[280px]">
-      {fechas.map((fecha) => (
-        <span key={fecha} className={`inline-flex px-2 py-0.5 rounded-lg text-xs font-medium border ${colorClass}`}>
-          {formatFechaCompletaEs(fecha)}
-        </span>
-      ))}
-    </div>
-  ) : <span className="text-gray-400 text-xs">Ninguna</span>;
-}
-
 export default function ReportePreview({
   reportData,
   activeReportContext,
@@ -75,57 +67,11 @@ export default function ReportePreview({
   let tableRows: TableRow[] = [];
 
   if (tipo === 'clase') {
-    stats = [
-      { label: 'Presentes', value: reportData.estadisticas?.presentes || 0 },
-      { label: 'Ausentes', value: reportData.estadisticas?.ausentes || 0 },
-      { label: '% Asistencia', value: reportData.estadisticas?.porcentajeAsistencia || '0%' },
-    ];
     subtitle = reportData.clase?.nombre || '';
-    tableHeaders = ['Beneficiario', 'Código', 'Presentes', 'Ausentes (Faltas)'];
-    tableRows = (reportData.asistenciasPorBeneficiario || []).map((item: { beneficiario: { nombre: string; codigo: string; id: string }; registros: RegistroFecha[] }) => ({
-      cells: [
-        <span className="font-bold text-gray-900" key="nombre">{item.beneficiario.nombre}</span>,
-        <span className="font-mono text-xs" key="codigo">{item.beneficiario.codigo}</span>,
-        renderDateChips(item.registros, 'presente', 'bg-green-50 text-green-700 border-green-200'),
-        renderDateChips(item.registros, 'ausente', 'bg-red-50 text-red-700 border-red-200 font-bold'),
-      ],
-      key: item.beneficiario.id,
-    }));
   } else if (tipo === 'beneficiario') {
-    stats = [
-      { label: 'Presentes', value: reportData.estadisticas?.presentes || 0 },
-      { label: 'Ausentes', value: reportData.estadisticas?.ausentes || 0 },
-      { label: 'Clases Inscrito', value: reportData.estadisticas?.totalClasesInscritas || 0 },
-      { label: '% Asistencia', value: reportData.estadisticas?.porcentajeAsistencia || '0%' },
-    ];
     subtitle = reportData.beneficiario?.nombre || '';
-    tableHeaders = ['Clase', 'Código Clase', 'Presentes', 'Ausentes (Faltas)'];
-    tableRows = (reportData.asistenciasPorClase || []).map((item: { clase: { nombre: string; codigo?: string; id: string }; registros: RegistroFecha[] }) => ({
-      cells: [
-        <span className="font-bold text-gray-900" key="nombre">{item.clase.nombre}</span>,
-        <span className="font-mono text-xs" key="codigo">{item.clase.codigo || '-'}</span>,
-        renderDateChips(item.registros, 'presente', 'bg-green-50 text-green-700 border-green-200'),
-        renderDateChips(item.registros, 'ausente', 'bg-red-50 text-red-700 border-red-200 font-bold'),
-      ],
-      key: item.clase.id,
-    }));
   } else if (tipo === 'tutor') {
-    stats = [
-      { label: 'Clases Asignadas', value: reportData.estadisticas?.totalClasesAsignadas || 0 },
-      { label: 'Días Registró Lista', value: reportData.estadisticas?.totalDiasConRegistroGlobal || 0 },
-    ];
     subtitle = reportData.tutor?.nombre || '';
-    tableHeaders = ['Clase', 'Código Clase', 'Días Pasó Lista', 'Fechas en que no pasó lista', 'Fechas en que sí pasó lista'];
-    tableRows = (reportData.clases || []).map((item: { clase: { nombre: string; codigo?: string; id: string }; estadisticas: { diasConAsistenciaRegistrada: number }; fechasRegistro: string[]; fechasSinRegistro?: string[] }) => ({
-      cells: [
-        <span className="font-bold text-gray-900" key="nombre">{item.clase.nombre}</span>,
-        <span className="font-mono text-xs" key="codigo">{item.clase.codigo || '-'}</span>,
-        <span className="font-bold text-blue-600" key="dias">{item.estadisticas.diasConAsistenciaRegistrada}</span>,
-        renderFechasTutor(item.fechasSinRegistro || [], 'bg-red-50 text-red-700 border-red-200'),
-        renderFechasTutor(item.fechasRegistro || [], 'bg-green-50 text-green-700 border-green-200'),
-      ],
-      key: item.clase.id,
-    }));
   } else if (tipo === 'global') {
     stats = [
       { label: 'Total Clases', value: reportData.resumen?.totalClases || 0 },
@@ -219,20 +165,67 @@ export default function ReportePreview({
           >
             <FileText className="w-4 h-4" /> Descargar PDF
           </button>
-          <button
-            onClick={onExportExcel}
-            className="flex-1 md:flex-none flex items-center justify-center gap-2 px-5 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold transition-all active:scale-95 text-sm"
-          >
-            <FileSpreadsheet className="w-4 h-4" /> Descargar Excel
-          </button>
+          {tipo !== 'clase' && (
+            <button
+              onClick={onExportExcel}
+              className="flex-1 md:flex-none flex items-center justify-center gap-2 px-5 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold transition-all active:scale-95 text-sm"
+            >
+              <FileSpreadsheet className="w-4 h-4" /> Descargar Excel
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Stats */}
-      <GraficoAsistencia stats={stats} />
+      {tipo === 'clase' ? (
+        <ListaAsistenciaClase data={reportData} />
+      ) : tipo === 'beneficiario' ? (
+        <BeneficiarioLista data={reportData} periodo={activeReportContext.fechaReporte} />
+      ) : tipo === 'tutor' ? (
+        <TutorLista data={reportData} periodo={activeReportContext.fechaReporte} />
+      ) : (
+        <>
+          {/* Stats */}
+          <GraficoAsistencia stats={stats} />
 
-      {/* Table */}
-      <TableComponent headers={tableHeaders} rows={tableRows} />
+          {/* Table */}
+          <TableComponent headers={tableHeaders} rows={tableRows} />
+        </>
+      )}
     </div>
+  );
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- complex dynamic report shape
+function BeneficiarioLista({ data, periodo }: { data: any; periodo: string }) {
+  const filas = filasBeneficiario(data);
+  const { nombre, codigo, edad } = data.beneficiario || {};
+  return (
+    <ListaFechasReporte
+      titulo="Asistencia del Beneficiario"
+      periodo={periodo}
+      datos={[['Beneficiario:', nombre || ''], ['Número:', codigo || '-'], ...(edad ? [['Edad:', `${edad} años`] as [string, string]] : [])]}
+      columnaActividad="Clase"
+      columnaMarca="Presente"
+      filas={filas}
+      totales={[['Presentes', filas.filter((f) => f.marcada).length], ['Ausentes', filas.filter((f) => !f.marcada).length]]}
+      vacio="No hay asistencias registradas en este periodo."
+    />
+  );
+}
+
+function TutorLista({ data, periodo }: { data: ReportePaseListaTutor; periodo: string }) {
+  const filas = filasTutor(data);
+  return (
+    <ListaFechasReporte
+      titulo="Control de Pase de Lista"
+      periodo={periodo}
+      datos={[['Tutor:', data.tutor.nombre], ['Actividades:', String(actividadesTutor(data))]]}
+      columnaActividad="Actividad"
+      columnaMarca="Pasó lista"
+      conTipo
+      filas={filas}
+      totales={totalesTutor(filas)}
+      vacio="No hay clases, clubs ni cursos de Supervivencia con beneficiarios en este periodo."
+    />
   );
 }

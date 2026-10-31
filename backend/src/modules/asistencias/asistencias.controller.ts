@@ -91,8 +91,7 @@ export class AsistenciasController {
   @RequierePermiso('reportes:ver')
   getReportePorClase(
     @Param('claseId', ParseUUIDPipe) claseId: string,
-    @Query('fechaInicio') fechaInicio?: string,
-    @Query('fechaFin') fechaFin?: string,
+    @Query() { fechaInicio, fechaFin }: ReportePaseListaDto,
   ) {
     return this.asistenciasService.getReportePorClase(
       claseId,
@@ -110,20 +109,6 @@ export class AsistenciasController {
   ) {
     return this.asistenciasService.getReportePorBeneficiario(
       beneficiarioId,
-      fechaInicio,
-      fechaFin,
-    );
-  }
-
-  @Get('reporte/tutor/:tutorId')
-  @RequierePermiso('reportes:ver')
-  getReportePorTutor(
-    @Param('tutorId', ParseUUIDPipe) tutorId: string,
-    @Query('fechaInicio') fechaInicio?: string,
-    @Query('fechaFin') fechaFin?: string,
-  ) {
-    return this.asistenciasService.getReportePorTutor(
-      tutorId,
       fechaInicio,
       fechaFin,
     );

@@ -46,8 +46,13 @@ export const formatFechasExport = (registros: { estado?: string; fecha: string }
     .join(', ') || '-';
 };
 
-export const formatFechaCompletaEs = (fecha: string): string =>
-  fecha ? `${formatFechaEs(fecha)}/${fecha.slice(0, 4)}` : '-';
+// "2023-09-01" → "01/09/2023"
+export const fechaDdMmAaaa = (fecha: string): string =>
+  `${fecha.slice(8, 10)}/${fecha.slice(5, 7)}/${fecha.slice(0, 4)}`;
+
+// "2023-09-01" → "Septiembre 2023"
+export const nombreMesAnio = (fecha: string): string =>
+  `${meses.find((m) => m.value === fecha.slice(5, 7))?.label ?? ''} ${fecha.slice(0, 4)}`.trim();
 
 // ── Period calculation ───────────────────────────────────────────────────────
 
