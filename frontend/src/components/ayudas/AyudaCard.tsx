@@ -38,8 +38,6 @@ export function AyudaCard({
     if ((event.target as Element).closest('button, a, input, textarea, select')) return;
     const row = event.currentTarget;
     if (row.scrollWidth <= row.clientWidth) return;
-    // Leave the native scrollbar available for direct interaction.
-    if (event.clientY - row.getBoundingClientRect().top >= row.clientHeight) return;
     dragRef.current = { pointerId: event.pointerId, x: event.clientX, scrollLeft: row.scrollLeft };
     row.setPointerCapture(event.pointerId);
     event.preventDefault();

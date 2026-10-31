@@ -151,7 +151,7 @@ export default function AyudasPage() {
 
           <div className="min-w-0 bg-white rounded-lg shadow-md border border-gray-100">
             <p className="border-b border-gray-100 px-4 py-3 text-xs text-gray-500">
-              Arrastra una fila hacia los lados para ver su información. También puedes usar su barra de desplazamiento.
+              Arrastra una fila hacia los lados para ver su información. También puedes usar la rueda del ratón con Shift o el trackpad.
             </p>
             <div className="min-w-0">
               <table key={`${paginaVisible}-${estadoFiltro}-${searchTerm}`} className="block w-full" aria-label="Solicitudes de ayuda">
