@@ -86,7 +86,7 @@ export default function DesembolsoFormModal({ desembolso, onClose }: DesembolsoF
       <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-xl max-w-lg w-full p-6 space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-semibold text-gray-900">
-            {editando ? 'Editar desembolso' : 'Registrar desembolso'}
+            {editando ? 'Editar Ayuda ADI' : 'Registrar Ayuda ADI'}
           </h3>
           <button type="button" onClick={onClose} className="text-gray-400 hover:text-gray-600">
             <X className="w-5 h-5" />

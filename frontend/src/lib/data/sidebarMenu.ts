@@ -30,7 +30,7 @@ export const menuGroups: MenuItem[] = [
         permisos: ['ayudas:ver'],
       },
       {
-        title: 'Desembolsos',
+        title: 'Ayuda ADI',
         icon: Banknote,
         href: '/dashboard/desembolsos',
         permisos: ['desembolsos:ver'],

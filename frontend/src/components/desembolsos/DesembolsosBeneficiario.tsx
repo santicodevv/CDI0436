@@ -18,7 +18,7 @@ export default function DesembolsosBeneficiario({ beneficiarioId }: DesembolsosB
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
           <Banknote className="w-5 h-5 text-emerald-600" />
-          Desembolsos
+          Ayuda ADI
         </h2>
         {desembolsos.length > 0 && (
           <span className="text-sm text-gray-600">
@@ -33,7 +33,7 @@ export default function DesembolsosBeneficiario({ beneficiarioId }: DesembolsosB
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600" />
         </div>
       ) : desembolsos.length === 0 ? (
-        <p className="text-sm text-gray-500 py-4 text-center">Este beneficiario no tiene desembolsos registrados.</p>
+        <p className="text-sm text-gray-500 py-4 text-center">Este beneficiario no tiene Ayudas ADI registradas.</p>
       ) : (
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
