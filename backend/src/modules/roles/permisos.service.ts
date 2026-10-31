@@ -311,6 +311,37 @@ export const PERMISOS_SISTEMA = [
       'Permite subir fotos de entrega y marcar bonos como entregados',
   },
 
+  // Desembolsos (ayudas económicas registradas a beneficiarios)
+  {
+    codigo: 'desembolsos:ver',
+    nombre: 'Ver desembolsos',
+    modulo: 'desembolsos',
+    accion: 'ver',
+    descripcion:
+      'Permite ver las ayudas económicas registradas y las del beneficiario',
+  },
+  {
+    codigo: 'desembolsos:crear',
+    nombre: 'Registrar desembolsos',
+    modulo: 'desembolsos',
+    accion: 'crear',
+    descripcion: 'Permite registrar ayudas económicas a beneficiarios',
+  },
+  {
+    codigo: 'desembolsos:editar',
+    nombre: 'Editar desembolsos',
+    modulo: 'desembolsos',
+    accion: 'editar',
+    descripcion: 'Permite corregir ayudas económicas registradas',
+  },
+  {
+    codigo: 'desembolsos:eliminar',
+    nombre: 'Eliminar desembolsos',
+    modulo: 'desembolsos',
+    accion: 'eliminar',
+    descripcion: 'Permite eliminar ayudas económicas registradas',
+  },
+
   // Reportes Generales
   {
     codigo: 'reportes_generales:ver',

@@ -46,6 +46,8 @@ import { MeritoModule } from './modules/merito/merito.module';
 import { ReportesModule } from './modules/reportes/reportes.module';
 import { AsistenciaPersonalModule } from './modules/asistencia-personal/asistencia-personal.module';
 import { BonosModule } from './modules/bonos/bonos.module';
+import { DesembolsosModule } from './modules/desembolsos/desembolsos.module';
+import { Desembolso } from './modules/desembolsos/desembolso.entity';
 
 @Module({
   imports: [
@@ -90,6 +92,7 @@ import { BonosModule } from './modules/bonos/bonos.module';
             Trabajador,
             AsistenciaPersonal,
             BonoRegalo,
+            Desembolso,
           ],
           // Keep schema synchronization disabled unless explicitly enabled outside production.
           // Usa los comandos del package.json para gestionar migraciones:
@@ -124,6 +127,7 @@ import { BonosModule } from './modules/bonos/bonos.module';
     ReportesModule,
     AsistenciaPersonalModule,
     BonosModule,
+    DesembolsosModule,
   ],
 })
 export class AppModule {}

@@ -215,3 +215,14 @@ export {
   useEliminarBono,
   bonosKeys,
 } from './useBonos';
+
+// Desembolsos
+export {
+  useDesembolsos,
+  useDesembolsosBeneficiario,
+  useBeneficiarioPorCodigo,
+  useCrearDesembolso,
+  useActualizarDesembolso,
+  useEliminarDesembolso,
+  desembolsosKeys,
+} from './useDesembolsos';

@@ -1,4 +1,4 @@
-import { Home, Users, BookOpen, Clock, FileText, Settings, Shield, UserCog, UserCheck, UserCircle, UtensilsCrossed, Tent, BarChart3, HeartPulse, Award, Gift, Cake, Trophy, Package, ListChecks } from 'lucide-react';
+import { Home, Users, BookOpen, Clock, FileText, Settings, Shield, UserCog, UserCheck, UserCircle, UtensilsCrossed, Tent, BarChart3, HeartPulse, Award, Gift, Cake, Trophy, Package, ListChecks, Banknote } from 'lucide-react';
 import type { MenuItem } from '@/lib/types';
 
 export const menuGroups: MenuItem[] = [
@@ -28,6 +28,12 @@ export const menuGroups: MenuItem[] = [
         icon: FileText,
         href: '/dashboard/ayudas',
         permisos: ['ayudas:ver'],
+      },
+      {
+        title: 'Desembolsos',
+        icon: Banknote,
+        href: '/dashboard/desembolsos',
+        permisos: ['desembolsos:ver'],
       },
       {
         title: 'Supervivencia',
