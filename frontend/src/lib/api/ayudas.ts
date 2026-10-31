@@ -52,6 +52,11 @@ export const ayudasApi = {
     return response.data;
   },
 
+  getByCodigoBeneficiario: async (codigo: string) => {
+    const response = await apiClient.get<Ayuda[]>(`/ayudas/beneficiario/${encodeURIComponent(codigo)}`);
+    return response.data;
+  },
+
   updateEstado: async (id: string, estado: string) => {
     const response = await apiClient.patch(`/ayudas/${id}/estado`, { estado });
     return response.data;

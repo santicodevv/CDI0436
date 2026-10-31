@@ -151,6 +151,7 @@ export {
 // Ayudas
 export {
   useAyudas,
+  useAyudasBeneficiario,
   useCreateAyuda,
   useUpdateEstadoAyuda,
   useDeleteAyuda,

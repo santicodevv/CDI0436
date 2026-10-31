@@ -13,6 +13,8 @@ import AgregarExpedienteModal from '@/components/beneficiarios/AgregarExpediente
 import EditarExpedienteModal from '@/components/beneficiarios/EditarExpedienteModal';
 import EditarPerfilModal from '@/components/beneficiarios/EditarPerfilModal';
 import DesembolsosBeneficiario from '@/components/desembolsos/DesembolsosBeneficiario';
+import AyudasBeneficiario from '@/components/ayudas/AyudasBeneficiario';
+import type { SeccionExtra } from '@/components/beneficiarios/ExpedienteList';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   useBeneficiario,
@@ -23,6 +25,7 @@ import {
   useUpdateExpediente,
   useDeleteExpediente,
 } from '@/lib/hooks/useBeneficiarios';
+import { useAyudasBeneficiario, useDesembolsosBeneficiario } from '@/lib/hooks';
 import type { Beneficiario, ExpedienteEntry, ExpedientePayload, ExpedienteEditPayload } from '@/lib/types';
 import { ArrowLeft, Edit, Power } from 'lucide-react';
 import { calcularEdad } from '@/lib/utils/formatters';
@@ -35,10 +38,14 @@ export default function BeneficiarioDetailPage() {
   const { tienePermiso } = useAuth();
 
   const beneficiarioId = id as string;
+  const puedeVerAyudas = tienePermiso('ayudas:ver');
+  const puedeVerDesembolsos = tienePermiso('desembolsos:ver');
 
   // ── Queries ───────────────────────────────────────────────────────────────
   const { data: beneficiario, isLoading: loadingBeneficiario } = useBeneficiario(beneficiarioId);
   const { data: expedientes = [], isLoading: loadingExpedientes } = useExpedientes(beneficiarioId);
+  const { data: ayudas = [] } = useAyudasBeneficiario(beneficiario?.codigo ?? '', puedeVerAyudas);
+  const { data: desembolsos = [] } = useDesembolsosBeneficiario(beneficiarioId, puedeVerDesembolsos);
 
   // ── Mutations ─────────────────────────────────────────────────────────────
   const updateBeneficiario = useUpdateBeneficiario();
@@ -97,6 +104,24 @@ export default function BeneficiarioDetailPage() {
     ? `${claseActiva.tutor.nombre} ${claseActiva.tutor.apellido || ''}`.trim()
     : 'No asignado';
   const puedeEditar = tienePermiso('beneficiarios:editar');
+
+  const seccionesExtra: SeccionExtra[] = [];
+  if (beneficiario && puedeVerAyudas) {
+    seccionesExtra.push({
+      key: 'solicitudes',
+      label: 'Solicitudes de ayuda',
+      count: ayudas.length,
+      content: <AyudasBeneficiario codigoBeneficiario={beneficiario.codigo} />,
+    });
+  }
+  if (beneficiario && puedeVerDesembolsos) {
+    seccionesExtra.push({
+      key: 'desembolsos',
+      label: 'Ayuda ADI',
+      count: desembolsos.length,
+      content: <DesembolsosBeneficiario beneficiarioId={beneficiario.id} />,
+    });
+  }
 
   return (
     <ProtectedRoute requiredPermisos={['beneficiarios:ver']}>
@@ -160,14 +185,12 @@ export default function BeneficiarioDetailPage() {
             {/* Expediente Digital */}
             <ExpedienteList
               expedientes={expedientes}
+              seccionesExtra={seccionesExtra}
               onAdd={() => setShowAddModal(true)}
               onEdit={setEntradaEditar}
               onDelete={handleDeleteExpediente}
               beneficiarioNombre={beneficiario.nombre}
             />
-
-            {/* Desembolsos (ayudas económicas) */}
-            {tienePermiso('desembolsos:ver') && <DesembolsosBeneficiario beneficiarioId={beneficiario.id} />}
           </div>
         )}
 

@@ -79,6 +79,18 @@ export class AyudasService {
     });
   }
 
+  // El código lo escribe el solicitante en el formulario público, por eso se
+  // compara sin espacios ni distinción de mayúsculas.
+  async findByCodigoBeneficiario(codigo: string): Promise<Ayuda[]> {
+    return await this.ayudasRepository
+      .createQueryBuilder('a')
+      .where('UPPER(TRIM(a.codigo_beneficiario)) = UPPER(TRIM(:codigo))', {
+        codigo,
+      })
+      .orderBy('a.creado_en', 'DESC')
+      .getMany();
+  }
+
   async findOne(id: string): Promise<Ayuda> {
     const ayuda = await this.ayudasRepository.findOne({ where: { id } });
     if (!ayuda) {

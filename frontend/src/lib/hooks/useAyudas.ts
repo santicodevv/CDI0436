@@ -6,6 +6,8 @@ export const ayudasKeys = {
   all: ['ayudas'] as const,
   lists: () => [...ayudasKeys.all, 'list'] as const,
   detalles: () => [...ayudasKeys.all, 'detail'] as const,
+  beneficiarios: () => [...ayudasKeys.all, 'beneficiario'] as const,
+  beneficiario: (codigo: string) => [...ayudasKeys.beneficiarios(), codigo] as const,
   comentarios: (ayudaId: string) => [...ayudasKeys.all, 'comentarios', ayudaId] as const,
   disponibilidad: () => [...ayudasKeys.all, 'disponibilidad'] as const,
 };
@@ -36,6 +38,14 @@ export function useAyudas() {
   });
 }
 
+export function useAyudasBeneficiario(codigo: string, enabled = true) {
+  return useQuery({
+    queryKey: ayudasKeys.beneficiario(codigo),
+    queryFn: () => ayudasApi.getByCodigoBeneficiario(codigo),
+    enabled: enabled && !!codigo,
+  });
+}
+
 export function useCreateAyuda() {
   const queryClient = useQueryClient();
 
@@ -44,6 +54,7 @@ export function useCreateAyuda() {
       ayudasApi.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ayudasKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: ayudasKeys.beneficiarios() });
     },
   });
 }
@@ -56,6 +67,7 @@ export function useUpdateEstadoAyuda() {
       ayudasApi.updateEstado(id, estado),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ayudasKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: ayudasKeys.beneficiarios() });
     },
   });
 }
@@ -67,6 +79,7 @@ export function useDeleteAyuda() {
     mutationFn: (id: string) => ayudasApi.remove(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ayudasKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: ayudasKeys.beneficiarios() });
     },
   });
 }
@@ -104,6 +117,7 @@ export function useUpdateFotoEntregaAyuda() {
       ayudasApi.updateFotoEntrega(id, fotoUrl),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ayudasKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: ayudasKeys.beneficiarios() });
     },
   });
 }
