@@ -12,6 +12,7 @@ import FotoGallery from '@/components/beneficiarios/FotoGallery';
 import AgregarExpedienteModal from '@/components/beneficiarios/AgregarExpedienteModal';
 import EditarExpedienteModal from '@/components/beneficiarios/EditarExpedienteModal';
 import EditarPerfilModal from '@/components/beneficiarios/EditarPerfilModal';
+import MudanzasBeneficiario from '@/components/beneficiarios/MudanzasBeneficiario';
 import DesembolsosBeneficiario from '@/components/desembolsos/DesembolsosBeneficiario';
 import AyudasBeneficiario from '@/components/ayudas/AyudasBeneficiario';
 import type { SeccionExtra } from '@/components/beneficiarios/ExpedienteList';
@@ -191,6 +192,7 @@ export default function BeneficiarioDetailPage() {
               onDelete={handleDeleteExpediente}
               beneficiarioNombre={beneficiario.nombre}
             />
+            <MudanzasBeneficiario key={beneficiario.id} beneficiario={beneficiario} puedeEditar={puedeEditar} />
           </div>
         )}
 

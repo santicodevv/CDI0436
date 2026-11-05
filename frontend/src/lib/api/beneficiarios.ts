@@ -6,6 +6,9 @@ import type {
   ImportarResultado,
   ReporteCarpetasData,
   EstadisticasGenerales,
+  CierreMudanza,
+  DatosMudanza,
+  MudanzaBeneficiario,
 } from '../types';
 import { Beneficiario } from '../types';
 
@@ -128,6 +131,21 @@ export const beneficiariosApi = {
 
   getExpedientes: async (id: string): Promise<ExpedienteEntry[]> => {
     const response = await apiClient.get(`/beneficiarios/${id}/expediente`);
+    return response.data;
+  },
+
+  getMudanzas: async (id: string): Promise<MudanzaBeneficiario[]> => {
+    const response = await apiClient.get(`/beneficiarios/${id}/mudanzas`);
+    return response.data;
+  },
+
+  registrarMudanza: async (id: string, data: DatosMudanza): Promise<MudanzaBeneficiario> => {
+    const response = await apiClient.post(`/beneficiarios/${id}/mudanzas`, data);
+    return response.data;
+  },
+
+  finalizarMudanza: async (id: string, mudanzaId: string, data: CierreMudanza): Promise<MudanzaBeneficiario> => {
+    const response = await apiClient.patch(`/beneficiarios/${id}/mudanzas/${mudanzaId}/finalizar`, data);
     return response.data;
   },
 

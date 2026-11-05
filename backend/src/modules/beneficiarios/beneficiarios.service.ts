@@ -5,7 +5,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In, DeepPartial } from 'typeorm';
+import { Repository, In, DeepPartial, IsNull } from 'typeorm';
 import { Beneficiario } from './beneficiario.entity';
 import { CreateBeneficiarioDto } from './dto/create-beneficiario.dto';
 import { UpdateBeneficiarioDto } from './dto/update-beneficiario.dto';
@@ -14,6 +14,14 @@ import { AsignarClaseDto } from './dto/asignar-clase.dto';
 import { Clase } from '../clases/clase.entity';
 import { EstadoAsistencia } from '../asistencias/asistencia.entity';
 import { BeneficiarioExpediente } from './beneficiario-expediente.entity';
+import {
+  BeneficiarioMudanza,
+  ResultadoMudanza,
+} from './beneficiario-mudanza.entity';
+import type {
+  FinalizarMudanzaDto,
+  RegistrarMudanzaDto,
+} from './dto/beneficiario-mudanza.dto';
 import * as XLSX from 'xlsx';
 
 interface ImportOptionsDto {
@@ -276,6 +284,101 @@ export class BeneficiariosService {
     }
 
     return await this.beneficiariosRepository.save(beneficiario);
+  }
+
+  getMudanzas(id: string): Promise<BeneficiarioMudanza[]> {
+    return this.beneficiariosRepository.manager.find(BeneficiarioMudanza, {
+      where: { beneficiario_id: id },
+      order: { registrado_en: 'DESC' },
+    });
+  }
+
+  registrarMudanza(
+    id: string,
+    data: RegistrarMudanzaDto,
+    usuario: { id: string; nombre: string },
+  ): Promise<BeneficiarioMudanza> {
+    return this.beneficiariosRepository.manager.transaction(async (manager) => {
+      const beneficiario = await manager.findOne(Beneficiario, {
+        where: { id },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!beneficiario) {
+        throw new NotFoundException('Beneficiario no encontrado');
+      }
+      if (!beneficiario.activo) {
+        throw new ConflictException('El beneficiario está inactivo');
+      }
+
+      const pendiente = await manager.exists(BeneficiarioMudanza, {
+        where: { beneficiario_id: id, resultado: IsNull() },
+      });
+      if (pendiente) {
+        throw new ConflictException(
+          'El beneficiario ya tiene una mudanza pendiente',
+        );
+      }
+
+      const mudanza = manager.create(BeneficiarioMudanza, {
+        direccion: data.direccion.trim(),
+        telefono: data.telefono.trim(),
+        cuidador: data.cuidador.trim(),
+        beneficiario_id: id,
+        registrado_por_id: usuario.id,
+        registrado_por: usuario.nombre,
+      });
+      return manager.save(mudanza);
+    });
+  }
+
+  finalizarMudanza(
+    id: string,
+    mudanzaId: string,
+    data: FinalizarMudanzaDto,
+    usuario: { id: string; nombre: string },
+  ): Promise<BeneficiarioMudanza> {
+    return this.beneficiariosRepository.manager.transaction(async (manager) => {
+      const beneficiario = await manager.findOne(Beneficiario, {
+        where: { id },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!beneficiario) {
+        throw new NotFoundException('Beneficiario no encontrado');
+      }
+
+      const mudanza = await manager.findOneBy(BeneficiarioMudanza, {
+        id: mudanzaId,
+        beneficiario_id: id,
+      });
+      if (!mudanza) throw new NotFoundException('Mudanza no encontrada');
+      if (mudanza.resultado) {
+        throw new ConflictException('La mudanza ya fue finalizada');
+      }
+
+      for (const nombre of ['clases', 'clubes', 'supervivencias']) {
+        const relacion = manager
+          .createQueryBuilder()
+          .relation(Beneficiario, nombre)
+          .of(id);
+        const inscripciones = await relacion.loadMany<{ id: string }>();
+        if (inscripciones.length) {
+          await relacion.remove(
+            inscripciones.map((inscripcion) => inscripcion.id),
+          );
+        }
+      }
+      await manager.update(Beneficiario, id, { activo: false });
+
+      mudanza.resultado = data.resultado;
+      mudanza.centro_receptor =
+        data.resultado === ResultadoMudanza.TRASLADO
+          ? (data.centro_receptor?.trim() ?? null)
+          : null;
+      mudanza.finalizado_por_id = usuario.id;
+      mudanza.finalizado_por = usuario.nombre;
+      mudanza.finalizado_en = new Date();
+      return manager.save(mudanza);
+    });
   }
 
   async asignarClases(

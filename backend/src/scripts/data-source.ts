@@ -15,6 +15,7 @@ import { Asistencia } from '../modules/asistencias/asistencia.entity';
 import { FotoAsistencia } from '../modules/asistencias/foto-asistencia.entity';
 import { Reporte } from '../modules/reportes/reporte.entity';
 import { Beneficiario } from '../modules/beneficiarios/beneficiario.entity';
+import { BeneficiarioMudanza } from '../modules/beneficiarios/beneficiario-mudanza.entity';
 import { BeneficiarioExpediente } from '../modules/beneficiarios/beneficiario-expediente.entity';
 import { Rol } from '../modules/roles/entities/rol.entity';
 import { Permiso } from '../modules/roles/entities/permiso.entity';
@@ -50,6 +51,7 @@ const options: DataSourceOptions = {
     FotoAsistencia,
     Reporte,
     Beneficiario,
+    BeneficiarioMudanza,
     BeneficiarioExpediente,
     Rol,
     Permiso,

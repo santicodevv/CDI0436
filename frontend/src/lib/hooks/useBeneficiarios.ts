@@ -1,6 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { beneficiariosApi } from '@/lib/api/beneficiarios';
-import type { Beneficiario } from '@/lib/types';
+import type { Beneficiario, CierreMudanza, DatosMudanza } from '@/lib/types';
+import { clasesKeys } from './useClases';
+import { clubsKeys } from './useClubs';
+import { supervivenciasKeys } from './useSupervivencias';
 
 // Query key factory
 export const beneficiariosKeys = {
@@ -12,7 +15,35 @@ export const beneficiariosKeys = {
   estadisticas: (id: string) => [...beneficiariosKeys.all, 'estadisticas', id] as const,
   cumpleanos: (mes: number) => [...beneficiariosKeys.all, 'cumpleanos', mes] as const,
   expedientes: (id: string) => [...beneficiariosKeys.all, 'expedientes', id] as const,
+  mudanzas: (id: string) => [...beneficiariosKeys.all, 'mudanzas', id] as const,
 };
+
+export function useMudanzas(id: string) {
+  return useQuery({
+    queryKey: beneficiariosKeys.mudanzas(id),
+    queryFn: () => beneficiariosApi.getMudanzas(id),
+  });
+}
+
+export function useRegistrarMudanza(id: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: DatosMudanza) => beneficiariosApi.registrarMudanza(id, data),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: beneficiariosKeys.mudanzas(id) }),
+  });
+}
+
+export function useFinalizarMudanza(id: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ mudanzaId, data }: { mudanzaId: string; data: CierreMudanza }) =>
+      beneficiariosApi.finalizarMudanza(id, mudanzaId, data),
+    onSuccess: async () => {
+      const afectados = [beneficiariosKeys.all, clasesKeys.all, clubsKeys.all, supervivenciasKeys.all];
+      await Promise.all(afectados.map(queryKey => queryClient.invalidateQueries({ queryKey })));
+    },
+  });
+}
 
 export function useBeneficiarios(filters?: Record<string, string>) {
   return useQuery({
