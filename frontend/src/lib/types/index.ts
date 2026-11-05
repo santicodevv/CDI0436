@@ -118,6 +118,26 @@ export interface Horario {
   actualizado_en: string;
 }
 
+export interface DatosMudanza {
+  direccion: string;
+  telefono: string;
+  cuidador: string;
+}
+
+export type CierreMudanza =
+  | { resultado: 'salida' }
+  | { resultado: 'traslado'; centro_receptor: string; recepcion_confirmada: boolean };
+
+export interface MudanzaBeneficiario extends DatosMudanza {
+  id: string;
+  resultado: CierreMudanza['resultado'] | null;
+  centro_receptor: string | null;
+  registrado_en: string;
+  registrado_por: string;
+  finalizado_en: string | null;
+  finalizado_por: string | null;
+}
+
 export interface Beneficiario {
   id: string;
   codigo: string;

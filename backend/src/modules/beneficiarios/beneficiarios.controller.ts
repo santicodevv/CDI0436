@@ -30,6 +30,11 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PermisosGuard } from '../auth/guards/permisos.guard';
 import { RequierePermiso } from '../auth/decorators/permisos.decorator';
 import { Public } from '../auth/decorators/public.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import {
+  FinalizarMudanzaDto,
+  RegistrarMudanzaDto,
+} from './dto/beneficiario-mudanza.dto';
 
 @Controller('beneficiarios')
 @UseGuards(JwtAuthGuard, PermisosGuard)
@@ -195,6 +200,38 @@ export class BeneficiariosController {
   @RequierePermiso('beneficiarios:ver')
   getExpedientes(@Param('id', ParseUUIDPipe) id: string) {
     return this.beneficiariosService.getExpedientes(id);
+  }
+
+  @Get(':id/mudanzas')
+  @RequierePermiso('beneficiarios:ver')
+  getMudanzas(@Param('id', ParseUUIDPipe) id: string) {
+    return this.beneficiariosService.getMudanzas(id);
+  }
+
+  @Post(':id/mudanzas')
+  @RequierePermiso('beneficiarios:editar')
+  registrarMudanza(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() data: RegistrarMudanzaDto,
+    @CurrentUser() usuario: { id: string; nombre: string },
+  ) {
+    return this.beneficiariosService.registrarMudanza(id, data, usuario);
+  }
+
+  @Patch(':id/mudanzas/:mudanzaId/finalizar')
+  @RequierePermiso('beneficiarios:editar')
+  finalizarMudanza(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('mudanzaId', ParseUUIDPipe) mudanzaId: string,
+    @Body() data: FinalizarMudanzaDto,
+    @CurrentUser() usuario: { id: string; nombre: string },
+  ) {
+    return this.beneficiariosService.finalizarMudanza(
+      id,
+      mudanzaId,
+      data,
+      usuario,
+    );
   }
 
   @Post(':id/expediente')
