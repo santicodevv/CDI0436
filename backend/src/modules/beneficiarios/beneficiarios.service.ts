@@ -19,6 +19,7 @@ import {
   ResultadoMudanza,
 } from './beneficiario-mudanza.entity';
 import type {
+  FiltrarMudanzasDto,
   FinalizarMudanzaDto,
   RegistrarMudanzaDto,
 } from './dto/beneficiario-mudanza.dto';
@@ -291,6 +292,85 @@ export class BeneficiariosService {
       where: { beneficiario_id: id },
       order: { registrado_en: 'DESC' },
     });
+  }
+
+  // Listado general de mudanzas con filtros y paginación del lado del servidor.
+  // El resumen respeta búsqueda y fechas, pero no el estado, para que las
+  // tarjetas sirvan como selector de estado.
+  async listarMudanzas(filtros: FiltrarMudanzasDto) {
+    const pagina = Math.max(1, Number(filtros.pagina) || 1);
+    const limite = Math.min(100, Math.max(1, Number(filtros.limite) || 20));
+    const zona = 'America/Santo_Domingo';
+
+    // Cada consulta se arma desde cero: clone() de TypeORM pierde la
+    // hidratación de los joins y el beneficiario no llegaría en la respuesta.
+    const buscar = filtros.buscar?.trim();
+    const consulta = () => {
+      const qb = this.beneficiariosRepository.manager
+        .createQueryBuilder(BeneficiarioMudanza, 'm')
+        .innerJoin('m.beneficiario', 'b');
+      if (buscar) {
+        qb.andWhere(
+          `(b.codigo ILIKE :buscar OR CONCAT_WS(' ', b.nombre, b.apellido) ILIKE :buscar
+            OR m.cuidador ILIKE :buscar OR m.direccion ILIKE :buscar
+            OR m.centro_receptor ILIKE :buscar OR m.telefono ILIKE :buscar)`,
+          { buscar: `%${buscar}%` },
+        );
+      }
+      if (filtros.desde) {
+        qb.andWhere('(m.registrado_en AT TIME ZONE :zona)::date >= :desde', {
+          zona,
+          desde: filtros.desde.slice(0, 10),
+        });
+      }
+      if (filtros.hasta) {
+        qb.andWhere('(m.registrado_en AT TIME ZONE :zona)::date <= :hasta', {
+          zona,
+          hasta: filtros.hasta.slice(0, 10),
+        });
+      }
+      return qb;
+    };
+
+    const conteo = await consulta()
+      .select('COUNT(*) FILTER (WHERE m.resultado IS NULL)', 'pendientes')
+      .addSelect(
+        `COUNT(*) FILTER (WHERE m.resultado = '${ResultadoMudanza.TRASLADO}')`,
+        'traslados',
+      )
+      .addSelect(
+        `COUNT(*) FILTER (WHERE m.resultado = '${ResultadoMudanza.SALIDA}')`,
+        'salidas',
+      )
+      .getRawOne<Record<'pendientes' | 'traslados' | 'salidas', string>>();
+    const resumen = {
+      pendientes: Number(conteo?.pendientes ?? 0),
+      traslados: Number(conteo?.traslados ?? 0),
+      salidas: Number(conteo?.salidas ?? 0),
+    };
+
+    const listado = consulta()
+      .select(['m', 'b.id', 'b.codigo', 'b.nombre', 'b.apellido', 'b.activo'])
+      .orderBy('m.registrado_en', 'DESC')
+      .addOrderBy('m.id', 'DESC')
+      // ManyToOne: offset/limit es seguro y evita la subconsulta de skip/take.
+      .offset((pagina - 1) * limite)
+      .limit(limite);
+    if (filtros.estado === 'pendiente') {
+      listado.andWhere('m.resultado IS NULL');
+    } else if (filtros.estado) {
+      listado.andWhere('m.resultado = :estado', { estado: filtros.estado });
+    }
+
+    const [data, total] = await listado.getManyAndCount();
+    return {
+      data,
+      total,
+      pagina,
+      limite,
+      totalPaginas: Math.max(1, Math.ceil(total / limite)),
+      resumen,
+    };
   }
 
   registrarMudanza(

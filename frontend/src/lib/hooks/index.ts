@@ -33,6 +33,7 @@ export {
   useDeleteBeneficiario,
   useBeneficiarioEstadisticas,
   useCumpleanosPorMes,
+  useListadoMudanzas,
   beneficiariosKeys,
 } from './useBeneficiarios';
 

@@ -138,6 +138,30 @@ export interface MudanzaBeneficiario extends DatosMudanza {
   finalizado_por: string | null;
 }
 
+export type EstadoMudanza = 'pendiente' | 'traslado' | 'salida';
+
+export interface MudanzaListado extends MudanzaBeneficiario {
+  beneficiario: Pick<Beneficiario, 'id' | 'codigo' | 'nombre' | 'apellido' | 'activo'>;
+}
+
+export interface FiltrosMudanzas {
+  estado?: EstadoMudanza;
+  buscar?: string;
+  desde?: string;
+  hasta?: string;
+  pagina: number;
+  limite: number;
+}
+
+export interface ListadoMudanzas {
+  data: MudanzaListado[];
+  total: number;
+  pagina: number;
+  limite: number;
+  totalPaginas: number;
+  resumen: { pendientes: number; traslados: number; salidas: number };
+}
+
 export interface Beneficiario {
   id: string;
   codigo: string;

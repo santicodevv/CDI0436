@@ -9,6 +9,8 @@ import type {
   CierreMudanza,
   DatosMudanza,
   MudanzaBeneficiario,
+  FiltrosMudanzas,
+  ListadoMudanzas,
 } from '../types';
 import { Beneficiario } from '../types';
 
@@ -136,6 +138,14 @@ export const beneficiariosApi = {
 
   getMudanzas: async (id: string): Promise<MudanzaBeneficiario[]> => {
     const response = await apiClient.get(`/beneficiarios/${id}/mudanzas`);
+    return response.data;
+  },
+
+  listarMudanzas: async (filtros: FiltrosMudanzas): Promise<ListadoMudanzas> => {
+    const params = Object.fromEntries(
+      Object.entries(filtros).filter(([, valor]) => valor !== undefined && valor !== ''),
+    );
+    const response = await apiClient.get('/mudanzas', { params });
     return response.data;
   },
 

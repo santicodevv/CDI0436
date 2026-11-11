@@ -1,8 +1,12 @@
 import { Transform } from 'class-transformer';
 import {
   Equals,
+  IsDateString,
   IsEnum,
+  IsIn,
   IsNotEmpty,
+  IsNumberString,
+  IsOptional,
   IsString,
   MaxLength,
   ValidateIf,
@@ -53,4 +57,34 @@ export class FinalizarMudanzaDto {
     message: 'Debes confirmar la recepción del centro de destino',
   })
   recepcion_confirmada?: boolean;
+}
+
+export const ESTADOS_MUDANZA = ['pendiente', 'traslado', 'salida'] as const;
+export type EstadoMudanza = (typeof ESTADOS_MUDANZA)[number];
+
+export class FiltrarMudanzasDto {
+  @IsOptional()
+  @IsIn(ESTADOS_MUDANZA)
+  estado?: EstadoMudanza;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  buscar?: string;
+
+  @IsOptional()
+  @IsDateString()
+  desde?: string;
+
+  @IsOptional()
+  @IsDateString()
+  hasta?: string;
+
+  @IsOptional()
+  @IsNumberString({ no_symbols: true })
+  pagina?: string;
+
+  @IsOptional()
+  @IsNumberString({ no_symbols: true })
+  limite?: string;
 }
