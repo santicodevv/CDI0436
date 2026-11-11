@@ -14,6 +14,7 @@ const MENSAJES: Record<string, string> = {
   isString: 'debe ser texto',
   isInt: 'debe ser un número entero',
   isNumber: 'debe ser un número',
+  isNumberString: 'debe ser un número entero positivo',
   isPositive: 'debe ser mayor que cero',
   min: 'es menor que el mínimo permitido',
   max: 'es mayor que el máximo permitido',

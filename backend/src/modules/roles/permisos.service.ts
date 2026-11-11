@@ -415,6 +415,16 @@ export const PERMISOS_SISTEMA = [
     descripcion: 'Permite eliminar cursos de supervivencia',
   },
 
+  // Mudanzas y traslados (vista general)
+  {
+    codigo: 'mudanzas:ver',
+    nombre: 'Ver mudanzas y traslados',
+    modulo: 'mudanzas',
+    accion: 'ver',
+    descripcion:
+      'Permite ver el listado general de mudanzas, traslados y salidas de todos los beneficiarios',
+  },
+
   // Cumpleaños
   {
     codigo: 'cumpleanos:ver',

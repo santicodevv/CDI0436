@@ -1,6 +1,6 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { beneficiariosApi } from '@/lib/api/beneficiarios';
-import type { Beneficiario, CierreMudanza, DatosMudanza } from '@/lib/types';
+import type { Beneficiario, CierreMudanza, DatosMudanza, FiltrosMudanzas } from '@/lib/types';
 import { clasesKeys } from './useClases';
 import { clubsKeys } from './useClubs';
 import { supervivenciasKeys } from './useSupervivencias';
@@ -16,6 +16,8 @@ export const beneficiariosKeys = {
   cumpleanos: (mes: number) => [...beneficiariosKeys.all, 'cumpleanos', mes] as const,
   expedientes: (id: string) => [...beneficiariosKeys.all, 'expedientes', id] as const,
   mudanzas: (id: string) => [...beneficiariosKeys.all, 'mudanzas', id] as const,
+  listadoMudanzas: (filtros?: FiltrosMudanzas) =>
+    [...beneficiariosKeys.all, 'mudanzas-listado', ...(filtros ? [filtros] : [])] as const,
 };
 
 export function useMudanzas(id: string) {
@@ -29,7 +31,21 @@ export function useRegistrarMudanza(id: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (data: DatosMudanza) => beneficiariosApi.registrarMudanza(id, data),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: beneficiariosKeys.mudanzas(id) }),
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: beneficiariosKeys.mudanzas(id) }),
+        queryClient.invalidateQueries({ queryKey: beneficiariosKeys.listadoMudanzas() }),
+      ]),
+  });
+}
+
+// Vista general: paginación en el servidor; mantiene la página anterior
+// visible mientras carga la siguiente.
+export function useListadoMudanzas(filtros: FiltrosMudanzas) {
+  return useQuery({
+    queryKey: beneficiariosKeys.listadoMudanzas(filtros),
+    queryFn: () => beneficiariosApi.listarMudanzas(filtros),
+    placeholderData: keepPreviousData,
   });
 }
 
