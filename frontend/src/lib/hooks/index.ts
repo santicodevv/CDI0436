@@ -34,6 +34,7 @@ export {
   useBeneficiarioEstadisticas,
   useCumpleanosPorMes,
   useListadoMudanzas,
+  useEliminarMudanza,
   beneficiariosKeys,
 } from './useBeneficiarios';
 

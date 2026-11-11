@@ -424,6 +424,14 @@ export const PERMISOS_SISTEMA = [
     descripcion:
       'Permite ver el listado general de mudanzas, traslados y salidas de todos los beneficiarios',
   },
+  {
+    codigo: 'mudanzas:eliminar',
+    nombre: 'Eliminar mudanzas pendientes',
+    modulo: 'mudanzas',
+    accion: 'eliminar',
+    descripcion:
+      'Permite eliminar mudanzas pendientes que no se pudieron completar',
+  },
 
   // Cumpleaños
   {

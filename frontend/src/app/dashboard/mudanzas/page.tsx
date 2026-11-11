@@ -5,8 +5,12 @@ import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
+import { isAxiosError } from 'axios';
 import Alert from '@/components/ui/Alert';
-import { useListadoMudanzas } from '@/lib/hooks';
+import Button from '@/components/ui/Button';
+import Modal from '@/components/ui/Modal';
+import { useAuth } from '@/contexts/AuthContext';
+import { useEliminarMudanza, useListadoMudanzas } from '@/lib/hooks';
 import type { EstadoMudanza, FiltrosMudanzas, MudanzaListado } from '@/lib/types';
 import {
   ArrowRightLeft,
@@ -16,6 +20,7 @@ import {
   FolderOpen,
   LogOut,
   Search,
+  Trash2,
   Truck,
   X,
 } from 'lucide-react';
@@ -54,6 +59,13 @@ function MudanzasContenido() {
   const [busqueda, setBusqueda] = useState(filtros.buscar ?? '');
 
   const { data, isPending, isError, isFetching } = useListadoMudanzas(filtros);
+  const { tienePermiso } = useAuth();
+  const puedeEliminar = tienePermiso('mudanzas:eliminar');
+  const eliminar = useEliminarMudanza();
+  const [porEliminar, setPorEliminar] = useState<MudanzaListado | null>(null);
+  const mensajeEliminar =
+    (isAxiosError<{ message?: string }>(eliminar.error) && eliminar.error.response?.data?.message) ||
+    'No se pudo eliminar la mudanza.';
 
   // Lee la URL vigente (no la del render) para que la búsqueda con espera no
   // reponga filtros que el usuario ya cambió o limpió.
@@ -272,14 +284,29 @@ function MudanzasContenido() {
                           '—'
                         )}
                       </td>
-                      <td className="px-4 py-3 text-right">
-                        <Link
-                          href={`/dashboard/beneficiarios/${m.beneficiario.id}`}
-                          className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800 whitespace-nowrap"
-                        >
-                          <FolderOpen className="w-4 h-4" aria-hidden="true" />
-                          {m.resultado ? 'Ver carpeta' : 'Finalizar en carpeta'}
-                        </Link>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center justify-end gap-3">
+                          <Link
+                            href={`/dashboard/beneficiarios/${m.beneficiario.id}`}
+                            className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800 whitespace-nowrap"
+                          >
+                            <FolderOpen className="w-4 h-4" aria-hidden="true" />
+                            {m.resultado ? 'Ver carpeta' : 'Finalizar en carpeta'}
+                          </Link>
+                          {puedeEliminar && !m.resultado && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                eliminar.reset();
+                                setPorEliminar(m);
+                              }}
+                              className="inline-flex items-center gap-1 text-sm text-red-600 hover:text-red-800 whitespace-nowrap"
+                            >
+                              <Trash2 className="w-4 h-4" aria-hidden="true" />
+                              Eliminar
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );
@@ -331,6 +358,50 @@ function MudanzasContenido() {
             </div>
           </div>
         </div>
+      )}
+
+      {porEliminar && (
+        <Modal
+          isOpen
+          size="sm"
+          title="Eliminar mudanza pendiente"
+          onClose={() => {
+            if (!eliminar.isPending) setPorEliminar(null);
+          }}
+        >
+          <div className="space-y-4">
+            <p className="rounded-lg bg-gray-50 p-3 text-sm text-gray-800">
+              <span className="font-medium">
+                {porEliminar.beneficiario.codigo} ·{' '}
+                {[porEliminar.beneficiario.nombre, porEliminar.beneficiario.apellido].filter(Boolean).join(' ')}
+              </span>
+              <br />
+              {porEliminar.direccion}
+            </p>
+            <p className="text-sm text-gray-600">
+              Se borrará esta mudanza pendiente y no se podrá recuperar. El participante sigue activo y se le podrá registrar otra mudanza.
+            </p>
+            {eliminar.isError && <Alert variant="error">{mensajeEliminar}</Alert>}
+            <div className="flex justify-end gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setPorEliminar(null)}
+                disabled={eliminar.isPending}
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="button"
+                variant="danger"
+                isLoading={eliminar.isPending}
+                onClick={() => eliminar.mutate(porEliminar.id, { onSuccess: () => setPorEliminar(null) })}
+              >
+                Eliminar
+              </Button>
+            </div>
+          </div>
+        </Modal>
       )}
     </div>
   );
