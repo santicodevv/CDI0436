@@ -1,5 +1,5 @@
 import { ConflictException, NotFoundException } from '@nestjs/common';
-import type { Repository } from 'typeorm';
+import { IsNull, type Repository } from 'typeorm';
 import { ValidationPipe } from '../../common/pipes/validation.pipe';
 import { Clase } from '../clases/clase.entity';
 import { Beneficiario } from './beneficiario.entity';
@@ -37,6 +37,7 @@ describe('Mudanzas de beneficiarios', () => {
     findOneBy: jest.fn(),
     createQueryBuilder: jest.fn().mockReturnValue(builder),
     update: jest.fn(),
+    delete: jest.fn(),
     save: jest.fn((data: object) => Promise.resolve(data)),
   };
   const service = new BeneficiariosService(
@@ -120,6 +121,49 @@ describe('Mudanzas de beneficiarios', () => {
       service.finalizarMudanza('beneficiario-1', 'mudanza-1', cierre, usuario),
     ).rejects.toBeInstanceOf(ConflictException);
     expect(manager.update).not.toHaveBeenCalled();
+  });
+
+  describe('eliminar mudanza pendiente', () => {
+    it('bloquea al beneficiario y borra solo si sigue pendiente', async () => {
+      manager.findOneBy.mockResolvedValue({
+        id: 'mudanza-1',
+        beneficiario_id: 'beneficiario-1',
+        resultado: null,
+      });
+      manager.delete.mockResolvedValue({ affected: 1 });
+
+      await expect(
+        service.eliminarMudanzaPendiente('mudanza-1'),
+      ).resolves.toBeUndefined();
+      expect(manager.findOne).toHaveBeenCalledWith(Beneficiario, {
+        where: { id: 'beneficiario-1' },
+        lock: { mode: 'pessimistic_write' },
+      });
+      expect(manager.delete).toHaveBeenCalledWith(BeneficiarioMudanza, {
+        id: 'mudanza-1',
+        resultado: IsNull(),
+      });
+    });
+
+    it('responde 404 si no existe', async () => {
+      manager.findOneBy.mockResolvedValue(null);
+      await expect(
+        service.eliminarMudanzaPendiente('mudanza-1'),
+      ).rejects.toBeInstanceOf(NotFoundException);
+      expect(manager.delete).not.toHaveBeenCalled();
+    });
+
+    it('rechaza borrar una mudanza ya finalizada', async () => {
+      manager.findOneBy.mockResolvedValue({
+        id: 'mudanza-1',
+        beneficiario_id: 'beneficiario-1',
+        resultado: ResultadoMudanza.TRASLADO,
+      });
+      manager.delete.mockResolvedValue({ affected: 0 });
+      await expect(
+        service.eliminarMudanzaPendiente('mudanza-1'),
+      ).rejects.toBeInstanceOf(ConflictException);
+    });
   });
 
   it('exige dirección y, para traslados, centro y confirmación de recepción', async () => {

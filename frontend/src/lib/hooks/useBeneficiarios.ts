@@ -61,6 +61,16 @@ export function useFinalizarMudanza(id: string) {
   });
 }
 
+// Solo pendientes. Invalida todo beneficiarios: listado general, historial de
+// la carpeta y la regla de "una pendiente a la vez".
+export function useEliminarMudanza() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (mudanzaId: string) => beneficiariosApi.eliminarMudanza(mudanzaId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: beneficiariosKeys.all }),
+  });
+}
+
 export function useBeneficiarios(filters?: Record<string, string>) {
   return useQuery({
     queryKey: beneficiariosKeys.list(filters),

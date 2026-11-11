@@ -149,6 +149,10 @@ export const beneficiariosApi = {
     return response.data;
   },
 
+  eliminarMudanza: async (mudanzaId: string): Promise<void> => {
+    await apiClient.delete(`/mudanzas/${mudanzaId}`);
+  },
+
   registrarMudanza: async (id: string, data: DatosMudanza): Promise<MudanzaBeneficiario> => {
     const response = await apiClient.post(`/beneficiarios/${id}/mudanzas`, data);
     return response.data;

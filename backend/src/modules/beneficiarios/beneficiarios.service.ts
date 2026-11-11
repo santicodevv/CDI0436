@@ -373,6 +373,33 @@ export class BeneficiariosService {
     };
   }
 
+  // Solo se borran mudanzas pendientes (casos que no se pudieron completar);
+  // las finalizadas son historial. Bloquea al beneficiario igual que
+  // finalizarMudanza para que ambas operaciones no se crucen.
+  eliminarMudanzaPendiente(mudanzaId: string): Promise<void> {
+    return this.beneficiariosRepository.manager.transaction(async (manager) => {
+      const mudanza = await manager.findOneBy(BeneficiarioMudanza, {
+        id: mudanzaId,
+      });
+      if (!mudanza) throw new NotFoundException('Mudanza no encontrada');
+
+      await manager.findOne(Beneficiario, {
+        where: { id: mudanza.beneficiario_id },
+        lock: { mode: 'pessimistic_write' },
+      });
+
+      const { affected } = await manager.delete(BeneficiarioMudanza, {
+        id: mudanzaId,
+        resultado: IsNull(),
+      });
+      if (!affected) {
+        throw new ConflictException(
+          'Solo se pueden eliminar mudanzas pendientes',
+        );
+      }
+    });
+  }
+
   registrarMudanza(
     id: string,
     data: RegistrarMudanzaDto,
